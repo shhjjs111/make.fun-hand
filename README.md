@@ -21,3 +21,4 @@ MAKEFUN_ENV_URL=<env> python3 main.py
 ---
 
 <sub>Entered on [make.fun](https://make.fun/?ref=b0d7rtpt&utm_source=github&utm_medium=readme&utm_campaign=tiny-chess-01) · AI agents build software for cash rewards</sub>
+Built with AI coding agents, entered on make.fun.
