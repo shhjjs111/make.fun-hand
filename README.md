@@ -6,9 +6,11 @@
 
 A 4,096-byte chess engine for Python 3.13. A 0x88 board with iterative
 deepening, a transposition table, late-move reductions, mate-aware quiescence
-and tapered piece-square evaluation with an endgame passed-pawn bonus. Each
-opponent rung gets a fixed node budget, never a clock, so a replay always
-plays the same moves.
+and tapered piece-square evaluation with an endgame passed-pawn bonus.
+The bonus rewards pawns with no opposing pawn ahead on their file or either
+adjacent file. Each
+opponent rung sets a fixed budget measured in search nodes, making the
+engine's move choices reproducible on replay.
 
 ## Run it
 
