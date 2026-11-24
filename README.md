@@ -98,8 +98,9 @@ main.ts               reads the snapshot, fits, writes the board, the data, the 
 lib/model.ts          the snapshot parser, the LTS fit, the validation, the board and the live set
 lib/farm.ts           the farm-plan generator: category, chains, TVL and age in, nine steps out
 dashboard/            index.html, app.css, app.js — the page the judge reads
-screenshots/          1-board.png, 2-detail.png, 3-filtered.png
+screenshots/          1-board.png, 2-detail.png, 3-filtered.png, 4-method.png
 tools/gate.mjs        the local gate and the page-arithmetic check
+tools/shoot.mjs       captures the four screenshots from a finished build over DevTools
 vendor/               make.fun's dossier library, unchanged
 ```
 

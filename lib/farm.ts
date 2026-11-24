@@ -196,6 +196,17 @@ function riskFor(input: FarmInput): string {
   return `Keep the position under a tenth of the farm budget, and revisit the record monthly.`;
 }
 
+/** The plan in one line for the detail drawer, and the short tag the board's Plan column shows. */
+export function farmBudget(input: FarmInput, steps: number): { budget: string; tag: string } {
+  const capital = capitalFor(input.tvl_usd);
+  const gas = gasOf(primaryChain(input.chains)) * 6;
+  const weeks = Math.ceil(holdDaysFor(input.age_days) / 7);
+  return {
+    budget: `Capital ${usd(capital)} · gas ${usd(gas)} · ${weeks} weeks · ${steps} steps`,
+    tag: `${steps} · ${capital < 1000 ? usd(capital) : `$${Math.round(capital / 1000)}k`}`,
+  };
+}
+
 /**
  * One protocol's plan: nine steps, each an action with its cost and its time. The same function is
  * written into board.json and repeated in the dashboard, so the page's plan is the board's plan.

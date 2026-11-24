@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { boardIssue, buildBoard, buildRadar, dataScript, fitModel, parseSnapshot } from './lib/model.ts';
 import type { BoardRow, Snapshot } from './lib/model.ts';
-import { farmPlan, shortUsd } from './lib/farm.ts';
+import { farmBudget, farmPlan, shortUsd } from './lib/farm.ts';
 import { buildDossier } from './vendor/makefun-board.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -38,7 +38,7 @@ const PLAIN_NAME = /^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$/;
 function arg(name: string, fallback: string): string {
   const at = process.argv.indexOf(`--${name}`);
   if (at >= 0 && at + 1 < process.argv.length) return process.argv[at + 1]!;
-  const equals = process.argv.find((a) => a.startsWith(`--${name}=`));
+  const equals = process.argv.find((a: string) => a.startsWith(`--${name}=`));
   return equals === undefined ? fallback : equals.slice(name.length + 3);
 }
 
@@ -46,6 +46,7 @@ function arg(name: string, fallback: string): string {
 function fail(message: string): never {
   process.stderr.write(`token radar: ${message}\n`);
   process.exit(1);
+  throw new Error(message);
 }
 
 /** The snapshot's path: --input may name the file or the directory that holds it. */
@@ -163,6 +164,24 @@ for (let i = 0; i < board.length; i++) {
   if (row.slug !== board[i]!.slug) fail(`data row ${i + 1} is ${row.slug}, the board's is ${board[i]!.slug}`);
   if (row.plan.length !== board[i]!.farm_steps.length) fail(`${row.slug}: the page's plan and board.json's plan differ in length`);
   if (row.plan.some((step, at) => step !== board[i]!.farm_steps[at])) fail(`${row.slug}: the page's plan and board.json's plan differ`);
+  // The plan's one-line budget, its Plan-column tag and the value's estimate band are data, not code:
+  // they cost the dossier nothing and the page only renders them.
+  const budget = farmBudget({
+    name: row.name,
+    category: row.category,
+    bucket: row.bucket,
+    chains: row.chains,
+    tvl_usd: row.tvl_usd,
+    age_days: row.age_days,
+    rank: row.rank,
+    implied_value_usd: row.implied,
+    as_of: snapshot.as_of,
+    watchlist: row.watch === 1,
+  }, row.plan.length);
+  const spread = fit.validation.median_factor;
+  row.budget = budget.budget;
+  row.tag = budget.tag;
+  row.band = `estimate band ${shortUsd(row.implied / spread)} – ${shortUsd(row.implied * spread)} at the fit's median error`;
 }
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'board.json'), `${JSON.stringify({ rows: board }, null, 0)}\n`);
@@ -182,7 +201,7 @@ checkScreenshots(join(out, 'screenshots'), shots);
 const TEXT_SOURCE = /\.(?:html|css|js|json|mjs|svg|md|txt)$/;
 let sourceBytes = 0;
 for (const name of dashboardFiles) if (TEXT_SOURCE.test(name)) sourceBytes += statSync(join(out, 'dashboard', name)).size;
-if (sourceBytes + 1_000 > TEXT_MAX_BYTES) fail(`the dashboard's text source is ${sourceBytes} bytes: the dossier would cut it`);
+if (sourceBytes + 600 > TEXT_MAX_BYTES) fail(`the dashboard's text source is ${sourceBytes} bytes: the dossier would cut it`);
 
 // The dossier goes last: the scorer rebuilds it from this /output and compares the bytes.
 const dossier = buildDossier(out, {

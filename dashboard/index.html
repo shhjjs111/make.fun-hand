@@ -4,11 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Token Radar — pre-token protocols ranked by implied value</title>
-<meta name="description" content="A radar of protocols that record no token, ranked by a valuation model fitted to the protocols whose token already trades.">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<a class="skip" href="#board">Skip to the board</a>
 <header class="masthead">
   <div class="masthead-in">
     <a class="brand" href="#top">
@@ -27,7 +25,7 @@
   <section class="hero" id="top">
     <div class="hero-copy">
       <p class="eyebrow">Launch radar · snapshot <span id="hero-asof">—</span> · floor <span id="hero-floor">—</span></p>
-      <h1><em id="hero-count">—</em> protocols with no token, ranked by what a token would be worth</h1>
+      <h1><em id="hero-count">—</em> protocols whose record carries no token, ranked by implied value</h1>
       <p class="lede" id="hero-lede">—</p>
       <p class="disclaimer">Implied value is this entry's own claim, computed from the snapshot's TVL, 7-day change and listing age. It is not a prediction that a token will be issued, and a record with no token is not proof that none exists.</p>
     </div>
@@ -36,9 +34,11 @@
   <section class="modelbar" aria-label="The fitted model">
     <div class="modelbar-eq">
       <span class="tag">fitted model</span>
-      <code id="equation">—</code>
+      <div class="modelbar-code">
+        <code id="equation">—</code>
+        <p class="modelbar-facts" id="facts">—</p>
+      </div>
     </div>
-    <button class="modelbar-more" type="button" id="modelbar-more">Validation and coefficients <span aria-hidden="true">→</span></button>
   </section>
   <section class="workspace" aria-label="The board">
     <div class="toolbar">
@@ -62,6 +62,7 @@
       <button type="button" class="chip" id="f-watch" aria-pressed="false">Watchlist</button>
     </div>
     <p class="filterline" id="filterline" hidden></p>
+    <p class="legend" id="legend">—</p>
     <div class="tablewrap" id="pre-wrap">
       <table class="board-table">
         <caption class="sr">Pre-token protocols ranked by implied token value</caption>

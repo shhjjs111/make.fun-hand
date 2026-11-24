@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck — a local Node tool run by node itself; the repo installs no type packages.
 // The entry's local gate: the seven rows make.fun's scorer checks, plus the two checks this bounty
 // asks the builder to run locally — that the rendered page recomputes every row's value and farm plan
 // from its own code, and that the dossier's source text fits whole.

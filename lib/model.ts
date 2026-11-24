@@ -60,6 +60,7 @@ export interface FitModel {
     delta: number;
   };
   calibration: number;
+  facts: string;
   buckets: BucketEffect[];
   training: TrainingSummary;
   validation: ValidationSummary;
@@ -136,6 +137,9 @@ export interface RadarRow {
   watch: 0 | 1;
   implied: number;
   plan: string[];
+  budget?: string;
+  tag?: string;
+  band?: string;
 }
 
 /** A token-bearing protocol: the market's own value, shown beside the model's fitted value. */
@@ -434,7 +438,7 @@ function validate(rows: TrainRow[], fallbackDays: number): ValidationSummary {
       index[j] = swap;
     }
     const folds: number[][] = Array.from({ length: CV_FOLDS }, () => []);
-    index.forEach((v, i) => folds[i % CV_FOLDS]!.push(v));
+    index.forEach((v, i) => { folds[i % CV_FOLDS]!.push(v); });
     for (const test of folds) {
       const testSet = new Set(test);
       const trainIdx = index.filter((i) => !testSet.has(i));
@@ -541,6 +545,7 @@ export function fitModel(snapshot: Snapshot): FitModel {
       delta: round(coef[3]!, 6),
     },
     calibration: round(calibration, 6),
+    facts: `fitted on ${train.length} traded protocols · ${BUCKETS.length} buckets · ${Math.round(train.length - kept)} outliers trimmed · every row recomputed in this page`,
     buckets,
     training: {
       n: train.length,
@@ -619,11 +624,18 @@ export function liveUniverse(snapshot: Snapshot): SnapshotProtocol[] {
   return snapshot.protocols.filter((p) => (p.mcap_usd ?? 0) > 0);
 }
 
+/** Slugs in a fixed order, for ties: the board's last tie-break, never the locale's. */
+function bySlug(a: string, b: string): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 /** The board: one row per protocol in the universe, ranked by implied value, strongest first. */
 export function buildBoard(snapshot: Snapshot, fit: FitModel): BoardRow[] {
   const onWatchlist = new Set(snapshot.watchlist);
   const scored = boardUniverse(snapshot).map((p) => ({ p, score: scoreProtocol(p, snapshot.as_of, fit) }));
-  scored.sort((a, b) => b.score.implied - a.score.implied || b.p.tvl_usd - a.p.tvl_usd || (a.p.slug < b.p.slug ? -1 : a.p.slug > b.p.slug ? 1 : 0));
+  scored.sort((a, b) => b.score.implied - a.score.implied || b.p.tvl_usd - a.p.tvl_usd || bySlug(a.p.slug, b.p.slug));
   return scored.map((s, i) => ({
     rank: i + 1,
     slug: s.p.slug,

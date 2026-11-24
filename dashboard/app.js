@@ -1,5 +1,5 @@
 // Token Radar — the page's behaviour. window.RADAR (written beside dashboard/ by main.ts) carries the
-// snapshot's provenance, the fitted model, the board's inputs and the live-token rows. Every implied
+// snapshot's provenance, the fitted model, the board's inputs and the live-token rows; every implied
 // value is recomputed from the fitted coefficients and checked against board.json's. No network.
 (function () {
   'use strict';
@@ -20,16 +20,16 @@
     if (!isNum(v)) return '—';
     return (v > 0 ? '+' : '') + v.toFixed(1) + '%';
   }
-  // The 7-day change as the model sees it: clamped to the stated band, with the raw figure in the title.
+  // The snapshot's 7-day change as reported, with a marker when the model clamps it to its band.
   function changeCell(row) {
     var raw = row.change_7d;
     if (!isNum(raw)) return { text: '—', cls: ' flat', title: '' };
     var g = Math.max(-M.growth_clip_pct, Math.min(M.growth_clip_pct, raw));
     var capped = Math.abs(raw) > M.growth_clip_pct;
     return {
-      text: pct(g) + (capped ? '*' : ''),
-      cls: (g >= 0 ? ' up' : ' down') + (capped ? ' capped' : ''),
-      title: capped ? pct(raw) + ' reported; the model uses the ±' + M.growth_clip_pct + '% band' : ''
+      text: pct(raw) + (capped ? '*' : ''),
+      cls: (raw >= 0 ? ' up' : ' down') + (capped ? ' capped' : ''),
+      title: capped ? 'the model clamps it to ' + pct(g) + ' (the ±' + M.growth_clip_pct + '% band)' : ''
     };
   }
   function mult(v) { return isNum(v) ? v.toFixed(3) + '×' : '—'; }
@@ -39,9 +39,7 @@
     if (days >= 730) return (days / 365).toFixed(1) + 'y';
     return Math.round(days) + 'd';
   }
-  //
-  // lib/model.ts's scoreProtocol in the page's own words: the same coefficients, transforms and
-  // multiplication order, so a row's value is recomputed from its inputs and checked against board.json.
+  // lib/model.ts's scoreProtocol in the page's own words: the same coefficients, transforms and order.
   function growthFraction(change) {
     var raw = isNum(change) ? change : 0;
     return Math.min(M.growth_clip_pct, Math.max(-M.growth_clip_pct, raw)) / 100;
@@ -64,11 +62,9 @@
     return { base: base, size: size, growth: growth, age: age, category: category, value: value };
   }
   //
-  // Each row's plan travels in data.js as `plan`: main.ts derives it in lib/farm.ts from the row's
-  // category, chains, TVL and age, writes the same strings into board.json's farm_steps, and the page
-  // renders them here. One source of plans, so the page and the board cannot disagree.
-  // The entry's own gate tool re-runs the page's arithmetic in a browser and compares it with
-  // board.json: expose the model's function so the check tests the page's code, not a copy of it.
+  // Each row's plan and budget travel in data.js; main.ts derives them in lib/farm.ts and writes the
+  // same strings into board.json. The gate's browser check compares the page's rendering with the board.
+  // The page's own arithmetic is exposed so that check tests this code, not a copy of it.
   window.radarParts = partsFor;
   var state = { tab: 'pre', q: '', category: 'all', chain: 'all', age: 'all', watch: false, sort: 'rank', dir: 1, open: null };
   var maxImplied = 1;
@@ -139,9 +135,11 @@
     document.getElementById('hero-asof').textContent = D.as_of;
     document.getElementById('hero-floor').textContent = shortUsd(D.floor_usd);
     document.getElementById('hero-count').textContent = D.board_size;
+    document.getElementById('facts').textContent = M.facts;
+    document.getElementById('legend').textContent = 'Ranked by implied value · * raw 7-day change outside the model\'s ±' + M.growth_clip_pct + '% band, which the model clamps · watchlist: the house\'s list · below floor: the radar\'s extension';
     document.getElementById('hero-lede').textContent =
-      'The watchlist names the ' + D.watchlist_size + ' protocols at or above the floor that record no token. It is a floor, not a ceiling: the radar applies the same rule below it and ranks all ' +
-      D.board_size + ' together, with a valuation fitted to the ' + D.model.training.n + ' protocols whose token already trades.';
+      'The watchlist names the ' + D.watchlist_size + ' protocols at or above the floor that record no token. It is a floor, not a ceiling: the same rule below it adds ' + D.below_floor_size +
+      ', and all ' + D.board_size + ' rank together on a valuation fitted to the ' + D.model.training.n + ' protocols whose token already trades.';
     document.getElementById('tab-pre-count').textContent = D.board_size;
     document.getElementById('tab-live-count').textContent = D.live_size;
     document.getElementById('foot-source').textContent = D.source;
@@ -167,9 +165,6 @@
     equation.appendChild(document.createTextNode('ln(mcap) = '));
     equation.appendChild(bold(coef.alpha.toFixed(3)));
     equation.appendChild(document.createTextNode(' + ' + coef.beta.toFixed(3) + '·ln(TVL/$100M) + ' + coef.gamma.toFixed(3) + '·g + ' + coef.delta.toFixed(3) + '·ln(1+age/365) + bucket'));
-    document.getElementById('modelbar-more').addEventListener('click', function () {
-      document.getElementById('method').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
   }
   function fillFilters() {
     var categories = categoryCounts();
@@ -232,7 +227,8 @@
     { key: 'change', label: '7 days', cls: 'num c-change' },
     { key: 'age', label: 'Age', cls: 'num c-age' },
     { key: 'implied', label: 'Implied value', cls: 'num c-impl' },
-    { key: 'mult', label: '× TVL', cls: 'num c-mult' }
+    { key: 'mult', label: '× TVL', cls: 'num c-mult' },
+    { key: 'plan', label: 'Plan', cls: 'num c-plan', plain: true }
   ];
   function buildHead() {
     var head = document.getElementById('board-head');
@@ -240,6 +236,11 @@
     HEAD.forEach(function (h) {
       var th = el('th', h.cls);
       th.scope = 'col';
+      if (h.plain) {
+        th.textContent = h.label;
+        head.appendChild(th);
+        return;
+      }
       var button = el('button');
       button.type = 'button';
       button.appendChild(document.createTextNode(h.label));
@@ -263,11 +264,11 @@
     tr.tabIndex = 0;
     tr.setAttribute('data-slug', row.slug);
     if (state.open === row.slug) tr.className = 'is-open';
-    tr.appendChild(el('td', 'num c-rank', String(row.rank)));
+    tr.appendChild(el('td', 'num c-rank' + (row.rank <= 3 ? ' top' : ''), String(row.rank)));
     var proto = el('td', 'c-protocol');
     var name = el('div', 'p-name');
     name.appendChild(document.createTextNode(row.name));
-    if (row.watch) name.appendChild(el('span', 'watchdot', 'watchlist'));
+    name.appendChild(el('span', row.watch ? 'watchdot' : 'watchdot floor', row.watch ? 'watchlist' : 'below floor'));
     name.appendChild(el('span', 'chev', '›'));
     proto.appendChild(name);
     var sub = el('div', 'p-sub');
@@ -296,6 +297,7 @@
     implied.appendChild(wrap);
     tr.appendChild(implied);
     tr.appendChild(el('td', 'num c-mult', mult(row.implied / Math.max(1, row.tvl_usd))));
+    tr.appendChild(el('td', 'num c-plan', row.tag || ''));
     tr.addEventListener('click', function () { openDetail(row.slug); });
     tr.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(row.slug); }
@@ -310,13 +312,11 @@
     rows.forEach(function (r) { fragment.appendChild(boardRow(r)); });
     body.appendChild(fragment);
     document.getElementById('board-empty').hidden = rows.length > 0;
-    var count = document.getElementById('count');
-    if (count) count.remove();
     var foot = document.getElementById('board-foot');
     clear(foot);
     foot.appendChild(document.createTextNode('Showing '));
     foot.appendChild(bold(rows.length + ' of ' + D.rows.length));
-    foot.appendChild(document.createTextNode(" pre-token protocols. Rank is the model's claim, not a price: the same function scores every row, and selecting one shows its arithmetic. A * on a 7-day change marks a raw figure outside the model's ±" + M.growth_clip_pct + "% band; the model uses the bound."));
+    foot.appendChild(document.createTextNode(" pre-token protocols. Rank is the model's claim, not a price: the same function scores every row, and selecting one shows its arithmetic."));
     var line = document.getElementById('filterline');
     var bits = filterSummary();
     line.hidden = bits.length === 0;
@@ -426,9 +426,12 @@
     var cap = el('div', 'cap');
     cap.appendChild(document.createTextNode('implied token value'));
     cap.appendChild(el('b', null, 'model ' + D.model.version));
+    if (row.band) cap.appendChild(el('b', null, row.band));
     value.appendChild(cap);
     body.appendChild(value);
-    var cols = el('div', 'd-cols');
+    if (row.budget) body.appendChild(el('div', 'd-budget', row.budget));
+    var grid = el('div', 'd-grid');
+    var left = el('div', 'd-left');
     var record = el('div', 'd-box');
     record.appendChild(el('h4', null, 'The record'));
     [
@@ -444,7 +447,7 @@
       line.appendChild(el('b', null, pair[1]));
       record.appendChild(line);
     });
-    cols.appendChild(record);
+    left.appendChild(record);
     var model = el('div', 'd-box');
     model.appendChild(el('h4', null, 'The model'));
     [
@@ -460,27 +463,19 @@
       line.appendChild(el('b', null, pair[1]));
       model.appendChild(line);
     });
-    cols.appendChild(model);
-    body.appendChild(cols);
+    left.appendChild(model);
     var eq = el('div', 'd-eq');
     var eqTop = el('div');
-    eqTop.appendChild(document.createTextNode(shortUsd(row.tvl_usd) + ' '));
-    eqTop.appendChild(span('op', '×'));
-    eqTop.appendChild(document.createTextNode(' ' + parts.base.toFixed(4) + ' '));
-    eqTop.appendChild(span('op', '×'));
-    eqTop.appendChild(document.createTextNode(' ' + parts.size.toFixed(3) + ' '));
-    eqTop.appendChild(span('op', '×'));
-    eqTop.appendChild(document.createTextNode(' ' + parts.growth.toFixed(3) + ' '));
-    eqTop.appendChild(span('op', '×'));
-    eqTop.appendChild(document.createTextNode(' ' + parts.age.toFixed(3) + ' '));
-    eqTop.appendChild(span('op', '×'));
-    eqTop.appendChild(document.createTextNode(' ' + parts.category.toFixed(3)));
+    [shortUsd(row.tvl_usd), parts.base.toFixed(4), parts.size.toFixed(3), parts.growth.toFixed(3), parts.age.toFixed(3), parts.category.toFixed(3)].forEach(function (text, at) {
+      if (at > 0) { eqTop.appendChild(document.createTextNode(' ')); eqTop.appendChild(span('op', '×')); eqTop.appendChild(document.createTextNode(' ')); }
+      eqTop.appendChild(document.createTextNode(text));
+    });
     eq.appendChild(eqTop);
     var eqBottom = el('div');
     eqBottom.appendChild(span('op', '= '));
     eqBottom.appendChild(span('res', usdExact(parts.value)));
     eq.appendChild(eqBottom);
-    body.appendChild(eq);
+    left.appendChild(eq);
     var check = el('div', 'd-check');
     var diff = Math.abs(parts.value - row.implied);
     if (diff <= 1) {
@@ -489,16 +484,18 @@
       check.appendChild(document.createTextNode(', the value board.json carries.'));
     } else {
       check.className = 'd-check bad';
-      check.appendChild(bold('✗ ' + usdExact(parts.value)));
-      check.appendChild(document.createTextNode(' here against ' + usdExact(row.implied) + ' in board.json: the data file is stale.'));
+      check.textContent = '✗ ' + usdExact(parts.value) + ' here against ' + usdExact(row.implied) + ' in board.json: the data file is stale.';
     }
-    body.appendChild(check);
+    left.appendChild(check);
     var fit = el('div', 'd-check');
-    fit.appendChild(document.createTextNode('Fit: ' + M.training.n + ' live tokens · ' + M.validation.folds + '×' + M.validation.repeats + '-fold CV · median error ' + M.validation.median_factor +
-      '× · R² ' + M.validation.r2.toFixed(2) + ' · ' + Math.round(M.validation.within_2x * 100) + '% within 2×.'));
-    body.appendChild(fit);
+    fit.appendChild(document.createTextNode('Fit: ' + M.training.n + ' live tokens · ' + M.validation.folds + '×' + M.validation.repeats + '-fold CV · median error ' + M.validation.median_factor + '× · R² ' + M.validation.r2.toFixed(2) + ' · ' + Math.round(M.validation.within_2x * 100) + '% within 2×.'));
+    left.appendChild(fit);
+    var note = el('p', 'd-note');
+    note.appendChild(bold('Read this first.'));
+    note.appendChild(document.createTextNode(' The plan is derived from the protocol\'s category, chains, TVL and age by the entry\'s program, and the same strings are in board.json. A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit, and never pay to claim a reward. The value is the entry\'s claim, not a prediction that a token will be issued.'));
+    left.appendChild(note);
     var plan = row.plan || [];
-    var section = el('section', 'd-section');
+    var section = el('section', 'd-plan');
     var heading = el('h3');
     heading.appendChild(document.createTextNode('Farm plan'));
     heading.appendChild(el('span', null, plan.length + ' steps · cost and time each'));
@@ -524,13 +521,9 @@
       list.appendChild(li);
     });
     section.appendChild(list);
-    body.appendChild(section);
-    var note = el('p', 'd-note');
-    note.appendChild(bold('Read this first.'));
-    note.appendChild(document.createTextNode(' The plan is generated from the protocol\'s category, chains, TVL and age — the same function filled board.json\'s farm_steps. ' +
-      'A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit, and never pay to claim a reward. ' +
-      'The implied value is this entry\'s claim, computed from the snapshot\'s figures; it is not a prediction that a token will be issued.'));
-    body.appendChild(note);
+    grid.appendChild(left);
+    grid.appendChild(section);
+    body.appendChild(grid);
     state.open = slug;
     syncHash();
     if (typeof dialog.showModal === 'function') {
