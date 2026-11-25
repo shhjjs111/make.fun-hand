@@ -51,8 +51,10 @@ category map knows DefiLlama's taxonomy, not a list of winners.
 
 ## The page
 
-`dashboard/` is a static page — `index.html`, `app.css`, `app.js`, no framework, no webfont, no image,
-no network request. It reads `data.js`, which the program writes beside the page:
+`dashboard/` is a static page — `index.html`, `z.css`, `a-model.js`, `app.js`, no framework, no webfont,
+no image, no network request. `a-model.js` is the real value model (`fitModel`, `ltsFit`, `validate`,
+`scoreProtocol` and the bucket map) that `lib/model.ts` re-exports, so the page and the program run one
+implementation. It reads `data.js`, which the program writes beside the page:
 
 - a **board** of every pre-token protocol, sortable on every column, filterable by search, category,
   chain, age and watchlist membership;
@@ -76,7 +78,7 @@ Node 22.18 or later, the standard library only, no install. The program writes:
 out/board.json        the ranked board: 195 rows, each with rank, implied value and farm steps
 out/data.js           the dashboard's inputs and the fitted model
 out/dashboard/        the static page
-out/screenshots/      the three captured views
+out/screenshots/      the four captured views
 out/dossier.json      what buildDossier writes from the four above, written last
 ```
 
@@ -98,9 +100,9 @@ seed in it, the validation's folds come from a fixed PRNG, and every write is or
 
 ```text
 main.ts               reads the snapshot, fits, writes the board, the data, the page and the dossier
-lib/model.ts          the snapshot parser, the LTS fit, the validation, the board and the live set
+lib/model.ts          the board layer (snapshot parser, product rules, ranking); re-exports the fit
 lib/farm.ts           the farm-plan generator: category, chains, TVL and age in, nine steps out
-dashboard/            index.html, app.css, app.js — the page the judge reads
+dashboard/            index.html, z.css, a-model.js, app.js — the page the judge reads
 screenshots/          1-board.png, 2-detail.png, 3-filtered.png, 4-method.png
 tools/gate.mjs        the local gate and the page-arithmetic check
 tools/shoot.mjs       captures the four screenshots from a finished build over DevTools

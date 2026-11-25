@@ -8,8 +8,8 @@
 //
 //   /output/board.json       the ranked board, one row per protocol, farm plan included
 //   /output/data.js          the same inputs for the dashboard, so the page recomputes each value
-//   /output/dashboard/       the static page (index.html, app.css, app.js)
-//   /output/screenshots/     the three captured views
+//   /output/dashboard/       the static page (index.html, z.css, a-model.js, app.js)
+//   /output/screenshots/     the four captured views
 //   /output/dossier.json     what buildDossier writes from the four above, written last
 //
 // Node 22, the standard library only, erasable TypeScript: no build step and nothing installed.
@@ -164,7 +164,7 @@ for (let i = 0; i < board.length; i++) {
   if (row.slug !== board[i]!.slug) fail(`data row ${i + 1} is ${row.slug}, the board's is ${board[i]!.slug}`);
   if (row.plan.length !== board[i]!.farm_steps.length) fail(`${row.slug}: the page's plan and board.json's plan differ in length`);
   if (row.plan.some((step, at) => step !== board[i]!.farm_steps[at])) fail(`${row.slug}: the page's plan and board.json's plan differ`);
-  // The plan's one-line budget, its Plan-column tag and the value's estimate band are data, not code:
+  // The plan's one-line budget, its Plan-column tag and the value's calibrated range are data, not code:
   // they cost the dossier nothing and the page only renders them.
   const budget = farmBudget({
     name: row.name,
@@ -178,10 +178,9 @@ for (let i = 0; i < board.length; i++) {
     as_of: snapshot.as_of,
     watchlist: row.watch === 1,
   }, row.plan.length);
-  const spread = fit.validation.median_factor;
   row.budget = budget.budget;
   row.tag = budget.tag;
-  row.band = `estimate band ${shortUsd(row.implied / spread)} – ${shortUsd(row.implied * spread)} at the fit's median error`;
+  row.band = `80% held-out range ${shortUsd(row.implied * fit.validation.ratio_p10)}–${shortUsd(row.implied * fit.validation.ratio_p90)} (80% of ${fit.validation.n.toLocaleString('en-US')} predictions)`;
 }
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'board.json'), `${JSON.stringify({ rows: board }, null, 0)}\n`);

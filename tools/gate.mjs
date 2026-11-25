@@ -343,7 +343,7 @@ function browserCheck() {
     const url = `file:///${join(dir, 'dashboard', 'index.html').split('\\').join('/')}`;
     const dom = execFileSync(
       browser,
-      ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--virtual-time-budget=8000', '--dump-dom', url],
+      ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--virtual-time-budget=8000', '--dump-dom', url],
       { encoding: 'utf8', maxBuffer: 128 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120_000 },
     );
     const match = dom.match(/<pre id="probe">([\s\S]*?)<\/pre>/);

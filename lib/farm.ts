@@ -6,8 +6,8 @@
 // position has to stay open. Every step is one string — the action, its cost and its time — because
 // board.json's farm_steps is a list of strings, and the dashboard renders the same list.
 //
-// The dashboard's app.js repeats these functions so the page's detail view and board.json agree; the
-// entry's tools/gate.mjs checks every row of the two against each other.
+// The dashboard renders the same strings from data.js; board.json carries them too, and the gate
+// checks every rendered plan against the board's.
 
 /** What a farm plan is built from: the row's own record and the model's result. */
 export interface FarmInput {
@@ -133,6 +133,15 @@ function holdDaysFor(age: number | null): number {
   return 21;
 }
 
+/** The short exit wait a bucket normally has, for the budget strip. */
+function exitWindowFor(bucket: string): string {
+  if (bucket === 'Staking') return '7–21d';
+  if (bucket === 'RWA') return '30–90d';
+  if (bucket === 'Curators') return '1–7d';
+  if (bucket === 'Lending' || bucket === 'DEX') return 'same-day';
+  return '1–3d';
+}
+
 /** The unlock or withdrawal wait a bucket normally has. */
 function unbondingFor(bucket: string): string {
   if (bucket === 'Staking') return 'a 7 to 21 day unbonding period';
@@ -196,13 +205,21 @@ function riskFor(input: FarmInput): string {
   return `Keep the position under a tenth of the farm budget, and revisit the record monthly.`;
 }
 
-/** The plan in one line for the detail drawer, and the short tag the board's Plan column shows. */
+/**
+ * The plan in one line for the detail drawer, and the short tag the board's Plan column shows. The gas
+ * figure is the sum of the gas every step prints (the funding step sets aside six transactions, then
+ * the position, guardrail, weekly actions and exit each print their own), so the budget reconciles with
+ * the steps instead of undercounting them.
+ */
 export function farmBudget(input: FarmInput, steps: number): { budget: string; tag: string } {
   const capital = capitalFor(input.tvl_usd);
-  const gas = gasOf(primaryChain(input.chains)) * 6;
+  const gas = gasOf(primaryChain(input.chains));
   const weeks = Math.ceil(holdDaysFor(input.age_days) / 7);
+  const gasAll = gas * (6 + 1 + 2 + weeks + 1);
+  const exitLow = capital * 0.001;
+  const exitHigh = capital * 0.005;
   return {
-    budget: `Capital ${usd(capital)} · gas ${usd(gas)} · ${weeks} weeks · ${steps} steps`,
+    budget: `Capital ${usd(capital)} at work · gas ${usd(gasAll)} all-in · exit 0.1–0.5% (${usd(exitLow)}–${usd(exitHigh)}) · ${weeks} weeks + ${exitWindowFor(input.bucket)} · ${steps} steps`,
     tag: `${steps} · ${capital < 1000 ? usd(capital) : `$${Math.round(capital / 1000)}k`}`,
   };
 }
@@ -224,21 +241,21 @@ export function farmPlan(input: FarmInput): string[] {
     `Confirm the record: DefiLlama counts ${shortUsd(input.tvl_usd)} of TVL on ${chainList(input.chains)} with no token on ${input.as_of}. Open ${input.name}'s own site, docs and stats page, and skip this row if a token is already live or announced. Cost: $0. Time: 15 minutes.`,
   );
   steps.push(
-    `Fund a fresh wallet with ${usd(capital)} of USDC and about ${usd(gas * 6)} of ${chain} gas for six transactions, and keep the wallet clear of your main holdings. Cost: ${usd(capital)} plus ${usd(gas * 6)} of gas. Time: 20 minutes.`,
+    `Fund a fresh wallet with ${usd(capital)} of USDC and set aside about ${usd(gas * 6)} of ${chain} gas for the plan's transactions, keeping the wallet clear of your main holdings. Cost: ${usd(capital)} at work + ${usd(gas * 6)} gas. Time: 20 minutes.`,
   );
-  steps.push(`${positionFor(input, capital, chain)} Cost: ${usd(capital)} plus ${usd(gas)} of gas. Time: 20 minutes to set up.`);
-  steps.push(`${guardrailFor(input, hold)} Cost: about ${usd(gas * 2)} of gas. Time: 10 minutes.`);
+  steps.push(`${positionFor(input, capital, chain)} Cost: same ${usd(capital)} at work + ${usd(gas)} gas. Time: 20 minutes to set up.`);
+  steps.push(`${guardrailFor(input, hold)} Cost: ${usd(gas * 2)} gas. Time: 10 minutes.`);
   steps.push(
-    `Repeat one small action each week for ${weeks} weeks: swap ${usd(chunk)} between the receipt and USDC, claim and restake rewards, or vote if the protocol publishes a Snapshot space. Cost: about ${usd(gas * weeks)} of gas in all. Time: 10 minutes a week.`,
+    `Repeat one small action each week for ${weeks} weeks: swap ${usd(chunk)} between the receipt and USDC, claim and restake rewards, or vote if the protocol publishes a Snapshot space. Cost: ${usd(gas * weeks)} gas in all. Time: 10 minutes a week.`,
   );
   steps.push(
-    `Keep the position open for at least ${hold} days so it appears in ${weeks} weekly records, and do not move it between wallets inside that window. Cost: the ${usd(capital)} stays at work. Time: ${hold} days.`,
+    `Keep the position open for at least ${weeks * 7} days so it appears in ${weeks} weekly records, and do not move it between wallets inside that window. Cost: $0; the ${usd(capital)} stays at work. Time: ${weeks * 7} days.`,
   );
   steps.push(
     `Log every transaction hash, date and contract address, and check ${input.name}'s own rewards page once a month; claim only from the address it publishes. Cost: $0, and never pay to claim. Time: 15 minutes a month.`,
   );
   steps.push(
-    `Unwind the ${usd(capital)} and wait out ${unbondingFor(input.bucket)}. Keep ${usd(gas)} of gas for the exit, and leave receipt tokens in the protocol rather than a third-party vault. Cost: a 0.1 to 0.5% withdrawal fee plus ${usd(gas)} of gas. Time: one withdrawal.`,
+    `Unwind the ${usd(capital)} and wait out ${unbondingFor(input.bucket)}. Keep ${usd(gas)} of gas for the exit, and leave receipt tokens in the protocol rather than a third-party vault. Cost: 0.1–0.5% withdrawal fee (${usd(capital * 0.001)}–${usd(capital * 0.005)} on ${usd(capital)}) + ${usd(gas)} gas. Time: one withdrawal.`,
   );
   steps.push(`${riskFor(input)} Cost: $0. Time: 5 minutes a month.`);
 

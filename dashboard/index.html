@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Token Radar — pre-token protocols ranked by implied value</title>
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="z.css">
 </head>
 <body>
 <header class="masthead">
@@ -40,6 +40,7 @@
       </div>
     </div>
   </section>
+  <p class="proof" id="proof">—</p>
   <p class="audit" id="audit">—</p>
 
   <section class="workspace" aria-label="The board">
@@ -54,12 +55,12 @@
       </label>
       <label class="select"><span>Category</span><select id="f-category"></select></label>
       <label class="select"><span>Chain</span><select id="f-chain"></select></label>
-      <label class="select"><span>Age</span><select id="f-age">
-        <option value="all">Any age</option>
+      <label class="select"><span>Record age</span><select id="f-age">
+        <option value="all">Any record age</option>
         <option value="new">Under 6 months</option>
         <option value="mid">6 to 18 months</option>
         <option value="old">Over 18 months</option>
-        <option value="none">No listing date</option>
+        <option value="none">No record date</option>
       </select></label>
       <button type="button" class="chip" id="f-watch" aria-pressed="false">Watchlist</button>
     </div>
@@ -128,6 +129,6 @@
 </footer>
 <dialog class="drawer" id="detail" aria-labelledby="detail-title"><div class="drawer-in" id="detail-body"></div></dialog>
 <script src="../data.js"></script>
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

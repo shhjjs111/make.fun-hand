@@ -47,7 +47,7 @@ if (!browser) {
 const port = 9333 + (process.pid % 200);
 const profile = mkdtempSync(join(tmpdir(), 'token-radar-shoot-'));
 const child = spawn(browser, [
-  '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+  '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files',
   '--hide-scrollbars', '--force-device-scale-factor=1', `--remote-debugging-port=${port}`,
   `--user-data-dir=${profile}`, 'about:blank',
 ], { stdio: 'ignore' });
