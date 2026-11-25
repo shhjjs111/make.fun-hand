@@ -267,7 +267,7 @@ const BUCKET_BY_CATEGORY: Record<string, string> = {
 };
 
 /** Categories whose TVL is a wrapped, staked or bridged product of an asset that already trades. */
-const PRODUCT_CATEGORY = new Set(['Bridge', 'Canonical Bridge', 'Cross Chain Bridge', 'Liquid Staking', 'Liquid Restaking', 'Restaked BTC', 'Anchor BTC', 'CEX']);
+const PRODUCT_CATEGORY = new Set(['Bridge', 'Canonical Bridge', 'Cross Chain Bridge', 'Liquid Staking', 'Liquid Restaking', 'Restaked BTC', 'Anchor BTC', 'CEX', 'Stablecoin Wrapper']);
 
 /** A name ending in a release marker is a pool or a product of another protocol, not a launch. */
 const VERSIONED_NAME = /\s(V\d+(\.\d+)?|v\d+(\.\d+)?|\d+\.\d+)$/;
@@ -721,7 +721,7 @@ export function buildRadar(snapshot: Snapshot, fit: FitModel, board: BoardRow[])
     watchlist: snapshot.watchlist.length,
     above_floor_others: board.filter((r) => !r.watchlist && r.tvl_usd >= snapshot.floor_usd).length,
     below_floor: board.filter((r) => !r.watchlist && r.tvl_usd < snapshot.floor_usd).length,
-    excluded: noToken.filter((p) => !isOwnProduct(p)).length,
+    excluded: noToken.filter((p) => !isOwnProduct(p) && !snapshot.watchlist.includes(p.slug)).length,
     token_no_cap: snapshot.protocols.filter((p) => p.mcap_usd === null && (p.gecko_id !== null || p.symbol !== null)).length,
     live: live.length,
     live_priced: live.filter((r) => r.mcap_usd > 0).length,

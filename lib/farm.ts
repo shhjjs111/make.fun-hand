@@ -156,7 +156,7 @@ function positionFor(input: FarmInput, capital: number, chain: string): string {
   if (category === 'Farm' || category === 'Governance Incentives') return `Stake ${usd(capital)} in ${name}'s farm on ${chain}, then claim and restake the rewards each week.`;
   if (category === 'Launchpad') return `Hold ${usd(capital)} ready in a ${name} account on ${chain} and join one launch a month rather than every launch.`;
   if (input.bucket === 'Lending') return `Supply ${usd(capital)} of USDC to ${name}'s ${chain} market and borrow 30% of it against the receipt if you want the extra exposure.`;
-  if (input.bucket === 'Stablecoin & CDP') return `Open a ${name} vault on ${chain}, deposit ${usd(capital * 2)} of collateral and mint ${usd(capital * 0.6)} of its stablecoin against it, keeping the ratio above 200%.`;
+  if (input.bucket === 'Stablecoin & CDP') return `Open a ${name} vault on ${chain}, deposit ${usd(capital)} of collateral and mint ${usd(capital * 0.4)} of its stablecoin against it, keeping the ratio above 200%.`;
   if (input.bucket === 'DEX') return `Provide ${usd(capital)} of liquidity to ${name}'s deepest USDC pair on ${chain}: 60% USDC and 40% the volatile side, then stake the LP receipt if the protocol allows it.`;
   if (input.bucket === 'Yield') return `Deposit ${usd(capital)} of USDC into ${name}'s largest vault on ${chain} and keep the vault shares in the farming wallet.`;
   if (input.bucket === 'Curators') return `Deposit ${usd(capital)} of USDC into the ${name} vault on ${chain} whose curator, fee and allocation are published, and keep the shares.`;

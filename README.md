@@ -11,10 +11,10 @@ and hands the reader a static dashboard with a detail view per protocol.
 The snapshot is DefiLlama's protocol index fetched on 2026-11-14: 758 protocols, 40 on the house's
 watchlist (no token on record, at or above the $50M floor, not a wrapped, staked or bridged product).
 The watchlist is a floor, never a ceiling, so the radar applies the same product rules below it and
-ranks **195 protocols**: the 40 watchlist names, 19 more above the floor that the house's list leaves out,
-and 136 below it. A full-snapshot audit accounts for all 758: 195 ranked pre-token, 147 no-token products
-excluded (wrapped, staked or bridged products, CEX and versioned pools), 272 protocols with a token id but
-no market cap, and 144 live tokens.
+ranks **194 protocols**: the 40 watchlist names, 18 more above the floor that the house's list leaves out,
+and 136 below it. A full-snapshot audit accounts for all 758: 194 ranked pre-token, 148 no-token products
+excluded (wrapped, staked or bridged products, stablecoin wrappers, CEX and versioned pools; a name on the
+house's list stays), 272 protocols with a token id but no market cap, and 144 live tokens.
 
 ## The value model
 
@@ -46,7 +46,7 @@ On this snapshot:
 The cross-section is noisy, and the dashboard says so: the ranking is the model's claim, the absolute
 value is an estimate. Growth and age are small tilts, and every row shows both multipliers.
 
-The same equation is applied to the 195 pre-token protocols. No protocol name is special-cased: the
+The same equation is applied to the 194 pre-token protocols. No protocol name is special-cased: the
 category map knows DefiLlama's taxonomy, not a list of winners.
 
 ## The page
@@ -73,7 +73,7 @@ MAKEFUN_OUTPUT_DIR=out node main.ts --input <kit>/input/snapshot.json
 Node 22.18 or later, the standard library only, no install. The program writes:
 
 ```text
-out/board.json        the ranked board: 195 rows, each with rank, implied value and farm steps
+out/board.json        the ranked board: 194 rows, each with rank, implied value and farm steps
 out/data.js           the dashboard's inputs and the fitted model
 out/dashboard/        the static page
 out/screenshots/      the three captured views
@@ -89,7 +89,7 @@ node tools/gate.mjs --snapshot <kit>/input/snapshot.json --out out
 The tool checks the seven rows make.fun's scorer checks (board shape and ordering, watchlist coverage,
 farm steps, dashboard files and network addresses, screenshots, dossier bytes) plus two local checks:
 the dashboard's text source fits the dossier's 64 KiB cap, and a local Chromium re-runs the page's own
-model and compares all 195 values and plans with `board.json`.
+model and compares all 194 values and plans with `board.json`.
 
 Two runs of `main.ts` into different directories are byte-for-byte identical: the fit has no random
 seed in it, the validation's folds come from a fixed PRNG, and every write is ordered.
