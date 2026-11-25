@@ -156,7 +156,7 @@ function positionFor(input: FarmInput, capital: number, chain: string): string {
   if (category === 'Farm' || category === 'Governance Incentives') return `Stake ${usd(capital)} in ${name}'s farm on ${chain}, then claim and restake the rewards each week.`;
   if (category === 'Launchpad') return `Hold ${usd(capital)} ready in a ${name} account on ${chain} and join one launch a month rather than every launch.`;
   if (input.bucket === 'Lending') return `Supply ${usd(capital)} of USDC to ${name}'s ${chain} market and borrow 30% of it against the receipt if you want the extra exposure.`;
-  if (input.bucket === 'Stablecoin & CDP') return `Open a ${name} vault on ${chain}, deposit ${usd(capital)} of collateral and mint ${usd(capital * 0.4)} of its stablecoin against it, keeping the ratio above 200%.`;
+  if (input.bucket === 'Stablecoin & CDP') return `Open a ${name} vault on ${chain}, deposit ${usd(capital)} of collateral and mint ${usd(capital * 0.4)} of its stablecoin against it, keeping the collateral ratio at 250%.`;
   if (input.bucket === 'DEX') return `Provide ${usd(capital)} of liquidity to ${name}'s deepest USDC pair on ${chain}: 60% USDC and 40% the volatile side, then stake the LP receipt if the protocol allows it.`;
   if (input.bucket === 'Yield') return `Deposit ${usd(capital)} of USDC into ${name}'s largest vault on ${chain} and keep the vault shares in the farming wallet.`;
   if (input.bucket === 'Curators') return `Deposit ${usd(capital)} of USDC into the ${name} vault on ${chain} whose curator, fee and allocation are published, and keep the shares.`;
@@ -171,7 +171,7 @@ function positionFor(input: FarmInput, capital: number, chain: string): string {
 function guardrailFor(input: FarmInput, hold: number): string {
   const name = input.name;
   if (input.bucket === 'Lending') return `Keep the health factor above 2.0 and set a price alert at 1.6; a liquidation costs more than any likely launch reward.`;
-  if (input.bucket === 'Stablecoin & CDP') return `Add collateral if the ratio falls under 180%, and repay part of the minted stablecoin instead of selling it into a thin market.`;
+  if (input.bucket === 'Stablecoin & CDP') return `Add collateral if the ratio falls under 200%, and repay part of the minted stablecoin instead of selling it into a thin market.`;
   if (input.bucket === 'DEX') return `If the pool is a concentrated range, set it to 15% either side of the price and rebalance when price leaves; a full range earns less and needs no attention.`;
   if (input.bucket === 'Yield') return `Read the vault's fee and its withdrawal terms first; a lock longer than ${hold} days defeats the plan.`;
   if (input.bucket === 'Curators') return `Split the deposit across two ${name} vaults if it runs more than one, and read the curator fee and the withdrawal queue before you commit.`;

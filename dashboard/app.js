@@ -1,5 +1,5 @@
-// Token Radar — window.RADAR (main.ts) carries the snapshot, model, board and live rows; every value is
-// recomputed from the fitted coefficients and checked against board.json's.
+// Token Radar — window.RADAR (main.ts) has the snapshot, model, board and live rows; every value is
+// recomputed from the coefficients and checked against board.json's.
 (function () {
   'use strict';
   var D = window.RADAR;
@@ -139,23 +139,24 @@
     document.getElementById('tab-live-count').textContent = D.live_size;
     document.getElementById('foot-source').textContent = D.source;
     document.getElementById('foot-scope').textContent =
-      'Floor ' + usdExact(D.floor_usd) + ' · ' + D.watchlist_size + ' watchlist protocols · ' + (D.board_size - D.watchlist_size) +
-      ' more no-token · ' + D.live_size + ' live · ' + D.as_of + '.';
+      'Floor ' + usdExact(D.floor_usd) + ' · ' + D.watchlist_size + ' watchlist · ' + (D.board_size - D.watchlist_size) +
+      ' more · ' + D.live_size + ' live · ' + D.as_of + '.';
     var stats = document.getElementById('hero-stats');
     clear(stats);
     var A = D.audit;
     [
       ['Snapshot', whole(A.total), '= ' + A.ranked + ' ranked + ' + A.excluded + ' excluded + ' + A.token_no_cap + ' no cap + ' + A.live + ' live', 'mint'],
       ['Pre-token ranked', whole(A.ranked), A.watchlist + ' watchlist · ' + A.above_floor_others + ' above floor · ' + A.below_floor + ' below'],
-      ['Watchlist covered', D.watchlist_size + ' / ' + D.watchlist_size, 'the list is the floor: a listed wrapper stays', 'mint'],
+      ['Watchlist', D.watchlist_size + ' / ' + D.watchlist_size, "the list is the floor: its names stay", 'mint'],
       ['Live tokens', whole(A.live), A.live_priced + ' priced · ' + (A.live - A.live_priced) + ' no cap'],
-      ['Products excluded', whole(A.excluded), 'wrapped · staked · bridged · CEX · versioned'],
+      ['Excluded', whole(A.excluded), 'wrapped · staked · bridged · CEX · versioned'],
       ['Token id, no cap', whole(A.token_no_cap)],
     ].forEach(function (s) {
       var row = el('div', 'fact' + (s[3] ? ' ' + s[3] : ''));
       row.appendChild(el('span', null, s[0]));
-      row.appendChild(el('b', null, s[1]));
-      if (s[2]) row.appendChild(el('em', null, s[2]));
+      var value = el('b', null, s[1]);
+      if (s[2]) value.appendChild(el('em', null, ' ' + s[2]));
+      row.appendChild(value);
       stats.appendChild(row);
     });
     var coef = D.model.coefficients;
@@ -395,7 +396,7 @@
     body.appendChild(fragment);
     var foot = document.getElementById('board-foot');
     clear(foot);
-    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (" + (D.audit.live - D.audit.live_priced) + " without a positive cap, marked), so the cap is fact and the fitted value is the model's. " +
+    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (" + (D.audit.live - D.audit.live_priced) + " without a positive cap, marked), so the cap is fact, the fitted value the model's. " +
       "Sorted by how close the fit came: a ratio near 1.00 means the model priced the record like the market did; the outliers are why the median out-of-sample error is " + M.validation.median_factor + "×."));
   }
   function openDetail(slug) {
