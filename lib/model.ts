@@ -154,6 +154,7 @@ export interface RadarRow {
   budget?: string;
   tag?: string;
   band?: string;
+  verdict?: string;
 }
 
 /** A token-bearing protocol: the market's own value, shown beside the model's fitted value. */

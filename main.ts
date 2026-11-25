@@ -181,6 +181,7 @@ for (let i = 0; i < board.length; i++) {
   const spread = fit.validation.median_factor;
   row.budget = budget.budget;
   row.tag = budget.tag;
+  row.verdict = budget.verdict;
   row.band = `estimate band ${shortUsd(row.implied / spread)} – ${shortUsd(row.implied * spread)} at the fit's median error`;
 }
 mkdirSync(out, { recursive: true });

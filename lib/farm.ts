@@ -196,15 +196,56 @@ function riskFor(input: FarmInput): string {
   return `Keep the position under a tenth of the farm budget, and revisit the record monthly.`;
 }
 
-/** The plan in one line for the detail drawer, and the short tag the board's Plan column shows. */
-export function farmBudget(input: FarmInput, steps: number): { budget: string; tag: string } {
-  const capital = capitalFor(input.tvl_usd);
-  const gas = gasOf(primaryChain(input.chains)) * 6;
-  const weeks = Math.ceil(holdDaysFor(input.age_days) / 7);
+/** The plan in one line for the detail drawer, the tag the board's Plan column shows, and the net verdict. */
+export function farmBudget(input: FarmInput, steps: number): { budget: string; tag: string; verdict: string } {
+  const n = farmNumbers(input);
   return {
-    budget: `Capital ${usd(capital)} · gas ${usd(gas)} · ${weeks} weeks · ${steps} steps`,
-    tag: `${steps} · ${capital < 1000 ? usd(capital) : `$${Math.round(capital / 1000)}k`}`,
+    budget: `Tier ${n.tier}/7 · capital ${usd(n.capital)} · gas ${usd(n.gasTotal)} · ${n.hold} days · net ${usdSigned(n.net)}`,
+    tag: `${steps} · ${n.capital < 1000 ? usd(n.capital) : `$${Math.round(n.capital / 1000)}k`}`,
+    verdict: `Assumed ${(n.apr * 100).toFixed(1)}% APR: ${usd(n.yieldUsd)} yield − ${usd(n.gasTotal)} gas − ${usd(n.fee)} exit fee = ${usdSigned(n.net)} net carry, before any launch or points; ${usdSigned(n.perHour)}/hour for ${Math.max(1, Math.round(n.hours))} hours`,
   };
+}
+
+/** An assumed market yield by bucket (the snapshot carries none), the exit fee and the seven capital tiers. */
+const BUCKET_APR: Record<string, number> = {
+  Lending: 0.055, 'Stablecoin & CDP': 0.07, DEX: 0.16, Yield: 0.09, Curators: 0.075, RWA: 0.06,
+  Staking: 0.045, Derivatives: 0.1, Bridge: 0.05, CEX: 0.05, Other: 0.06,
+};
+const EXIT_FEE = 0.003;
+const TIERS = [100, 250, 500, 1000, 2500, 5000, 10000];
+
+/** The plan's money: capital and its tier, gas over the whole hold, an assumed yield, the exit fee and the net. */
+interface FarmNumbers {
+  capital: number;
+  tier: number;
+  gasTotal: number;
+  weeks: number;
+  hold: number;
+  apr: number;
+  yieldUsd: number;
+  fee: number;
+  net: number;
+  hours: number;
+  perHour: number;
+}
+
+function farmNumbers(input: FarmInput): FarmNumbers {
+  const capital = capitalFor(input.tvl_usd);
+  const gas = gasOf(primaryChain(input.chains));
+  const hold = holdDaysFor(input.age_days);
+  const weeks = Math.ceil(hold / 7);
+  const gasTotal = gas * (7 + weeks);
+  const apr = BUCKET_APR[input.bucket] ?? 0.06;
+  const yieldUsd = capital * apr * (hold / 365);
+  const fee = capital * EXIT_FEE;
+  const net = yieldUsd - gasTotal - fee;
+  const hours = 1 + weeks / 6 + hold / 120;
+  return { capital, tier: TIERS.indexOf(capital) + 1, gasTotal, weeks, hold, apr, yieldUsd, fee, net, hours, perHour: net / hours };
+}
+
+/** A signed dollar figure: −$44 rather than $-44. */
+function usdSigned(value: number): string {
+  return `${value < 0 ? '−' : ''}${usd(Math.abs(value))}`;
 }
 
 /**
@@ -218,6 +259,7 @@ export function farmPlan(input: FarmInput): string[] {
   const hold = holdDaysFor(input.age_days);
   const weeks = Math.ceil(hold / 7);
   const chunk = Math.max(10, Math.round(capital / 10));
+  const n = farmNumbers(input);
   const steps: string[] = [];
 
   steps.push(
@@ -232,7 +274,7 @@ export function farmPlan(input: FarmInput): string[] {
     `Repeat one small action each week for ${weeks} weeks: swap ${usd(chunk)} between the receipt and USDC, claim and restake rewards, or vote if the protocol publishes a Snapshot space. Cost: about ${usd(gas * weeks)} of gas in all. Time: 10 minutes a week.`,
   );
   steps.push(
-    `Keep the position open for at least ${hold} days so it appears in ${weeks} weekly records, and do not move it between wallets inside that window. Cost: the ${usd(capital)} stays at work. Time: ${hold} days.`,
+    `Keep the position open for at least ${hold} days: at an assumed ${(n.apr * 100).toFixed(1)}% APR the ${usd(capital)} earns about ${usd(n.yieldUsd)}, plus any points the protocol runs, and after about ${usd(n.gasTotal)} of gas and a ${usd(n.fee)} exit fee the net is about ${usdSigned(n.net)} across ${weeks} weekly records. Cost: the ${usd(capital)} stays at work. Time: ${hold} days.`,
   );
   steps.push(
     `Log every transaction hash, date and contract address, and check ${input.name}'s own rewards page once a month; claim only from the address it publishes. Cost: $0, and never pay to claim. Time: 15 minutes a month.`,

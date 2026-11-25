@@ -1,5 +1,5 @@
-// Token Radar — window.RADAR (main.ts) has the snapshot, model, board and live rows; every value is
-// recomputed from the coefficients and checked against board.json's.
+// Token Radar — the page reads window.RADAR (written by main.ts); every value is recomputed from the
+// fitted coefficients and checked against board.json.
 (function () {
   'use strict';
   var D = window.RADAR;
@@ -19,7 +19,7 @@
     if (!isNum(v)) return '—';
     return (v > 0 ? '+' : '') + v.toFixed(1) + '%';
   }
-  // The snapshot's 7-day change as reported, with a marker when the model clamps it to its band.
+  // The 7-day change as reported, marked when the model clamps it.
   function changeCell(row) {
     var raw = row.change_7d;
     if (!isNum(raw)) return { text: '—', cls: ' flat', title: '' };
@@ -59,7 +59,7 @@
     var value = Math.max(1, Math.round(row.tvl_usd * base * size * growth * age * category));
     return { base: base, size: size, growth: growth, age: age, category: category, value: value };
   }
-  // Plans travel in data.js; this exposes the page's arithmetic to the gate's browser check.
+  // Exposes the page's arithmetic to the gate's browser check.
   window.radarParts = partsFor;
   var state = { tab: 'pre', q: '', category: 'all', chain: 'all', age: 'all', watch: false, sort: 'rank', dir: 1, open: null };
   var maxImplied = 1;
@@ -140,23 +140,22 @@
     document.getElementById('foot-source').textContent = D.source;
     document.getElementById('foot-scope').textContent =
       'Floor ' + usdExact(D.floor_usd) + ' · ' + D.watchlist_size + ' watchlist · ' + (D.board_size - D.watchlist_size) +
-      ' more · ' + D.live_size + ' live · ' + D.as_of + '.';
+      ' more · ' + D.live_size + ' live.';
     var stats = document.getElementById('hero-stats');
     clear(stats);
     var A = D.audit;
     [
-      ['Snapshot', whole(A.total), '= ' + A.ranked + ' ranked + ' + A.excluded + ' excluded + ' + A.token_no_cap + ' no cap + ' + A.live + ' live', 'mint'],
-      ['Pre-token ranked', whole(A.ranked), A.watchlist + ' watchlist · ' + A.above_floor_others + ' above floor · ' + A.below_floor + ' below'],
+      ['Snapshot', whole(A.total), '= ' + A.ranked + ' + ' + A.excluded + ' + ' + A.token_no_cap + ' + ' + A.live, 'mint'],
+      ['Pre-token ranked', whole(A.ranked), A.watchlist + ' watchlist · ' + A.above_floor_others + ' above · ' + A.below_floor + ' below'],
       ['Watchlist', D.watchlist_size + ' / ' + D.watchlist_size, "the list is the floor: its names stay", 'mint'],
       ['Live tokens', whole(A.live), A.live_priced + ' priced · ' + (A.live - A.live_priced) + ' no cap'],
-      ['Excluded', whole(A.excluded), 'wrapped · staked · bridged · CEX · versioned'],
+      ['Products excluded', whole(A.excluded), 'wrapped/staked/bridged/CEX/versioned'],
       ['Token id, no cap', whole(A.token_no_cap)],
     ].forEach(function (s) {
       var row = el('div', 'fact' + (s[3] ? ' ' + s[3] : ''));
       row.appendChild(el('span', null, s[0]));
-      var value = el('b', null, s[1]);
-      if (s[2]) value.appendChild(el('em', null, ' ' + s[2]));
-      row.appendChild(value);
+      row.appendChild(el('b', null, s[1]));
+      if (s[2]) row.appendChild(el('em', null, s[2]));
       stats.appendChild(row);
     });
     var coef = D.model.coefficients;
@@ -396,7 +395,7 @@
     body.appendChild(fragment);
     var foot = document.getElementById('board-foot');
     clear(foot);
-    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (" + (D.audit.live - D.audit.live_priced) + " without a positive cap, marked), so the cap is fact, the fitted value the model's. " +
+    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (" + (D.audit.live - D.audit.live_priced) + " without a positive cap, marked), so the cap is fact, fitted value the model's. " +
       "Sorted by how close the fit came: a ratio near 1.00 means the model priced the record like the market did; the outliers are why the median out-of-sample error is " + M.validation.median_factor + "×."));
   }
   function openDetail(slug) {
@@ -434,6 +433,7 @@
     value.appendChild(cap);
     body.appendChild(value);
     if (row.budget) body.appendChild(el('div', 'd-budget', row.budget));
+    if (row.verdict) body.appendChild(el('div', 'd-budget muted', row.verdict));
     var grid = el('div', 'd-grid');
     var left = el('div', 'd-left');
     var record = el('div', 'd-box');
@@ -496,7 +496,7 @@
     left.appendChild(fit);
     var note = el('p', 'd-note');
     note.appendChild(bold('Read this first.'));
-    note.appendChild(document.createTextNode(' The plan is derived from this row\'s category, chains, TVL and age, and the same strings are in board.json. A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit, and never pay to claim a reward.'));
+    note.appendChild(document.createTextNode(' The plan is derived from this row\'s category, chains, TVL and age; board.json holds the same strings. A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit.'));
     left.appendChild(note);
     var plan = row.plan || [];
     var section = el('section', 'd-plan');
