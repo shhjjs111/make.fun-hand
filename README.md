@@ -61,10 +61,12 @@ map knows DefiLlama's taxonomy, not a list of winners.
 
 ## The page
 
-`dashboard/` is a static page — `index.html`, `z.css`, `a-model.js`, `app.js`, no framework, no webfont,
-no image, no network request. `a-model.js` is the real value model (`fitModel`, `validate`,
-`scoreProtocol` and the bucket map) that `lib/model.ts` re-exports, so the page and the program run one
-implementation. It reads `data.js`, which the program writes beside the page:
+`dashboard/` is a static page — `index.html`, `z.css`, `a-model.js`, `plan.js`, `app.js`, no framework,
+no webfont, no image, no network request. `a-model.js` is the real value model (`fitModel`, `validate`,
+`scoreProtocol` and the bucket map) that `lib/model.ts` re-exports, and `plan.js` is the real farm
+generator (`farmPlan`, `farmBudget`, `positionFor`, `guardrailFor`, `riskFor`, `capitalFor`,
+`holdDaysFor`, `CHAIN_GAS`) that `lib/farm.ts` re-exports, so the page and the program run one
+implementation of each. It reads `data.js`, which the program writes beside the page:
 
 - a **board** of every pre-token protocol, sortable on every column, filterable by search, category,
   chain, age and watchlist membership;
