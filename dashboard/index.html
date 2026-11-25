@@ -27,13 +27,13 @@
       <p class="eyebrow">Launch radar · snapshot <span id="hero-asof">—</span> · floor <span id="hero-floor">—</span></p>
       <h1><em id="hero-count">—</em> protocols whose record carries no token, ranked by implied value</h1>
       <p class="lede" id="hero-lede">—</p>
-      <p class="disclaimer">Implied value is this entry's own claim, computed from the snapshot's TVL, 7-day change and listing age. It is not a prediction that a token will be issued, and a record with no token is not proof that none exists.</p>
+      <p class="disclaimer">Implied value is this entry's own claim, computed from the snapshot's own TVL, 7-day change and record age. It is not a prediction that a token will be issued, and a record with no token is not proof that none exists.</p>
     </div>
     <dl class="stats" id="hero-stats"></dl>
   </section>
   <section class="modelbar" aria-label="The fitted model">
     <div class="modelbar-eq">
-      <span class="tag">fitted model</span>
+      <span class="tag">comparable model</span>
       <div class="modelbar-code">
         <code id="equation">—</code>
         <p class="modelbar-facts" id="facts">—</p>
@@ -91,18 +91,18 @@
     <div class="method-head">
       <p class="eyebrow">Methodology</p>
       <h2 id="method-title">How implied value is computed</h2>
-      <p class="method-lede">One equation, fitted to the snapshot's own token-bearing protocols, then applied to the protocols that record no token. No protocol is named in the model: every row is scored by the same function, and the page recomputes each row's value from its inputs and checks it against <code>board.json</code>.</p>
+      <p class="method-lede">One rule, read off the snapshot's own live comparables and applied to the protocols that record no token. No protocol is named in the model: every row takes the median multiple of its 12 nearest comparables, and the page recomputes each row's value from its inputs and checks it against <code>board.json</code>.</p>
     </div>
     <div class="method-grid">
       <article class="card">
-        <h3>The equation</h3>
+        <h3>The rule</h3>
         <pre class="formula" id="formula">—</pre>
         <p class="card-note" id="formula-note">—</p>
-        <h3 class="mt">Fitted coefficients</h3>
-        <table class="mini" id="coef-table"><tbody></tbody></table>
+        <h3 class="mt">Distance weights</h3>
+        <table class="mini" id="coef-table"><thead><tr><th scope="col">Weight</th><th scope="col">Value</th><th scope="col">What it does</th></tr></thead><tbody></tbody></table>
       </article>
       <article class="card">
-        <h3>The fit</h3>
+        <h3>The comparable set</h3>
         <dl class="fitfacts" id="fit-facts"></dl>
         <h3 class="mt">Out-of-sample validation</h3>
         <p class="card-note" id="validation-note">—</p>
@@ -113,9 +113,9 @@
         <div class="prose" id="limitations">—</div>
       </article>
       <article class="card">
-        <h3>Category multipliers</h3>
-        <p class="card-note">The eleven buckets a DefiLlama category maps to, the fitted effect on the multiple, and how many training rows each holds. Small buckets shrink toward 1.00 under the ridge penalty.</p>
-        <table class="mini buckets" id="bucket-table"><thead><tr><th scope="col">Bucket</th><th scope="col">Effect</th><th scope="col">Multiplier</th><th scope="col">Rows</th></tr></thead><tbody></tbody></table>
+        <h3>Bucket multiples</h3>
+        <p class="card-note">The eleven buckets a DefiLlama category maps to, how many live comparables each holds, and the median mcap/TVL and IQR inside it.</p>
+        <table class="mini buckets" id="bucket-table"><thead><tr><th scope="col">Bucket</th><th scope="col">Rows</th><th scope="col">Median ×</th><th scope="col">IQR ×</th></tr></thead><tbody></tbody></table>
       </article>
     </div>
   </section>

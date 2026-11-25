@@ -45,59 +45,66 @@ export interface Snapshot {
   watchlist: string[];
 }
 
-/** The fitted model, with everything the dashboard states about it. */
+/** One live comparable: a protocol whose record carries a market cap of $5M or more and a TVL. */
+export interface Comparable {
+  slug: string;
+  name: string;
+  bucket: string;
+  tvl_usd: number;
+  mcap_usd: number;
+  ratio: number;
+  g: number;
+  age_days: number | null;
+  a: number;
+}
+
+/** The fitted model: the comparable set and the scales the distance uses, all read from the snapshot. */
 export interface FitModel {
   version: string;
-  ref_tvl_usd: number;
-  growth_clip_pct: number;
-  age_fallback_days: number;
-  trim_share: number;
-  ridge: number;
-  lts_iterations: number;
-  coefficients: {
-    alpha: number;
-    beta: number;
-    gamma: number;
-    delta: number;
+  floor_usd: number;
+  k: number;
+  weights: { category: number; growth: number; age: number; growth_clip_pct: number };
+  scales: { log_tvl_sd: number; log_age_sd: number; age_fallback_days: number };
+  comparables: Comparable[];
+  training: {
+    n: number;
+    priced: number;
+    dormant: number;
+    zero_cap: number;
+    median_age_days: number;
+    median_multiple: number;
+    iqr_low: number;
+    iqr_high: number;
   };
-  calibration: number;
-  facts: string;
-  buckets: BucketEffect[];
-  training: TrainingSummary;
+  buckets: BucketRow[];
   validation: ValidationSummary;
+  facts: string;
 }
 
-/** One category bucket's fitted effect and how much of the training set it holds. */
-export interface BucketEffect {
+/** One category bucket's comparable count, median multiple and interquartile range. */
+export interface BucketRow {
   name: string;
-  effect: number;
-  multiplier: number;
   n: number;
+  median_multiple: number;
+  iqr_low: number;
+  iqr_high: number;
 }
 
-/** What the fit saw: how many rows, how many were trimmed, which records it could not use. */
-export interface TrainingSummary {
-  n: number;
-  trimmed: number;
-  no_market_cap: number;
-  zero_market_cap: number;
-  no_token: number;
-  median_age_days: number;
-  median_implied_ratio: number;
-}
-
-/** Out-of-sample numbers: repeated k-fold cross-validation over the training rows. */
+/** Out-of-sample numbers: repeated k-fold cross-validation over the comparable set. */
 export interface ValidationSummary {
   folds: number;
   repeats: number;
   n: number;
-  median_abs_log_error: number;
   median_factor: number;
-  r2: number;
   within_2x: number;
-  ratio_p10: number;
-  ratio_p90: number;
-  coverage: number;
+  within_3x: number;
+  spearman: number;
+  band50_low: number;
+  band50_high: number;
+  band80_low: number;
+  band80_high: number;
+  coverage50: number;
+  coverage80: number;
 }
 
 /** One row of the ranked board, exactly as board.json writes it. */
@@ -117,12 +124,11 @@ export interface BoardRow {
   watchlist: boolean;
   implied_value_usd: number;
   model: {
-    base_multiple: number;
-    size_multiple: number;
-    growth_multiple: number;
-    age_multiple: number;
-    category_multiple: number;
+    multiple: number;
     growth_pct: number;
+    neighbours: number;
+    iqr_low: number;
+    iqr_high: number;
   };
   farm_steps: string[];
 }
@@ -249,12 +255,11 @@ export function buildBoard(snapshot: Snapshot, fit: FitModel): BoardRow[] {
     watchlist: onWatchlist.has(s.p.slug),
     implied_value_usd: s.score.implied,
     model: {
-      base_multiple: round(s.score.base_multiple, 8),
-      size_multiple: round(s.score.size_multiple, 6),
-      growth_multiple: round(s.score.growth_multiple, 6),
-      age_multiple: round(s.score.age_multiple, 6),
-      category_multiple: round(s.score.category_multiple, 6),
+      multiple: s.score.multiple,
       growth_pct: round(s.score.growth_pct, 2),
+      neighbours: s.score.neighbours.length,
+      iqr_low: round(s.score.iqr[0], 4),
+      iqr_high: round(s.score.iqr[1], 4),
     },
     farm_steps: [],
   }));

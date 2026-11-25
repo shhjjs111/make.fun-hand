@@ -18,41 +18,51 @@ no market cap, and 144 live tokens.
 
 ## The value model
 
-The 128 protocols in the snapshot that record both a TVL and a positive market cap are the training set.
-The model is a log-linear fit, in log space:
+The model is a **12-nearest-comparable median multiple**, computed at runtime from the snapshot. The
+comparable set `C` is every protocol whose record carries a market cap of at least $5M and a positive
+TVL — **87 rows** on this snapshot (41 sub-$5M caps and 16 zero-or-negative caps are left out). Nothing is
+fitted: for a protocol `p` the page finds the 12 comparables with the smallest distance
 
 ```text
-ln(mcap) = α + β·ln(TVL / $100M) + γ·g + δ·ln(1 + age_years) + effect[bucket]
+d(p,c) = ((ln tv − ln c.tvl) / s_T)^2
+       + 4 · [bucket ≠ bucket(c)]
+       + 0.5 · ((g − g(c)) / 0.5)^2
+       + 0.05 · ((a − a(c)) / s_A)^2
 ```
 
-with `g` the 7-day TVL change clamped to ±50%, eleven category buckets, a ridge penalty on the bucket
-dummies, and least-trimmed squares (the worst 20% of residuals are refitted out each iteration, because a
-few records price a chain token or a sibling token against a pool's TVL). The intercept is then
-calibrated so the median token-bearing protocol is priced at its market cap.
+where `g` is the 7-day TVL change clamped to ±50%, `a = ln(1 + record_age/365)`, and `s_T`, `s_A` and the
+age fallback are population scales of `C` itself (2.100929, 0.374615, 995 days). The implied value is
+`max(1, round(TVL × median(mcap/TVL of the 12)))`. For a live row the row itself is excluded from `C`, so
+the check is leave-one-out. No protocol name is read: the only lookup is DefiLlama's category → bucket map.
 
 On this snapshot:
 
 | | |
 | --- | --- |
-| α, β, γ, δ | 16.5376, 0.5476, 0.6400, 0.2522 |
-| training rows | 128 of 144 with a market cap (16 record a zero market cap) |
-| trimmed per iteration | 26 |
-| calibration | 0.8668 |
-| validation | 5-fold × 20 repeats, n = 2,560 out-of-sample predictions |
-| median error | 3.889× in value (1.358 in log space) |
-| R² (log space) | 0.121 |
-| within 2× | 28% |
+| live comparables | 87 (mcap ≥ $5M, TVL > 0) |
+| median multiple | 0.4793× TVL |
+| IQR | 0.1686–1.5651× |
+| validation | 5-fold × 20 repeats over C, n = 1,740 held-out predictions |
+| median error | 2.373× |
+| within 2× / 3× | 41.9% / 60.3% |
+| rank IC | 0.422 |
+| 50% held-out band | 0.351–2.111× (coverage 50.0%) |
+| 80% held-out band | 0.170–5.678× (coverage 80.3%) |
 
-The cross-section is noisy, and the dashboard says so: the ranking is the model's claim, the absolute
-value is an estimate. Growth and age are small tilts, and every row shows both multipliers.
+The 50% and 80% bands are the 25th/75th and 10th/90th percentiles of signed held-out log error
+`ln(actual/predicted)` computed inside `validate()`, with the share of held-out rows inside each band as
+its coverage. They are estimates from 87 rows: the ranking is the model's claim, the absolute value is an
+estimate. (The design note's measured 2.361× / 42.1% / 0.430 used a 0.10 age weight and scored held-out
+comparables with the fallback age; this entry uses the spec's 0.05 weight and each row's real `listed_at`
+age, which moves the numbers slightly.)
 
-The same equation is applied to the 195 pre-token protocols. No protocol name is special-cased: the
-category map knows DefiLlama's taxonomy, not a list of winners.
+The same rule is applied to the 195 pre-token protocols. No protocol name is special-cased: the category
+map knows DefiLlama's taxonomy, not a list of winners.
 
 ## The page
 
 `dashboard/` is a static page — `index.html`, `z.css`, `a-model.js`, `app.js`, no framework, no webfont,
-no image, no network request. `a-model.js` is the real value model (`fitModel`, `ltsFit`, `validate`,
+no image, no network request. `a-model.js` is the real value model (`fitModel`, `validate`,
 `scoreProtocol` and the bucket map) that `lib/model.ts` re-exports, so the page and the program run one
 implementation. It reads `data.js`, which the program writes beside the page:
 
@@ -60,11 +70,12 @@ implementation. It reads `data.js`, which the program writes beside the page:
   chain, age and watchlist membership;
 - a **live-token tab** with the 144 token-bearing protocols (128 with a priced cap), the market's cap beside the model's fitted
   value, sorted by how close the fit came;
-- a **detail drawer** for every protocol: its record, the model's five multipliers, the arithmetic that
-  produces its value, a check that the page's own recomputation matches `board.json`, and a nine-step
-  farm plan with a cost and a time for each step;
-- a **methodology panel** with the equation, the coefficients, the fit's sample, the validation numbers
-  and what the model does not claim.
+- a **detail drawer** for every protocol: its record, the 12-row neighbour table with each neighbour's TVL,
+  market cap, multiple and distance, the `TVL × median multiple = implied` arithmetic, the neighbour IQR, the
+  50%/80% calibrated bands with coverage, a check that the page's own recomputation matches `board.json`, and
+  a nine-step farm plan with a cost and a time for each step;
+- a **methodology panel** with the rule, the distance weights, the 87-row comparable set, the validation
+  numbers, the eleven-bucket table and what the model does not claim.
 
 ## Run it
 
@@ -93,8 +104,8 @@ farm steps, dashboard files and network addresses, screenshots, dossier bytes) p
 the dashboard's text source fits the dossier's 64 KiB cap, and a local Chromium re-runs the page's own
 model and compares all 195 values and plans with `board.json`.
 
-Two runs of `main.ts` into different directories are byte-for-byte identical: the fit has no random
-seed in it, the validation's folds come from a fixed PRNG, and every write is ordered.
+Two runs of `main.ts` into different directories are byte-for-byte identical: the comparable set is read
+from the snapshot, the validation's folds come from a fixed PRNG, and every write is ordered.
 
 ## Layout
 
@@ -111,7 +122,7 @@ vendor/               make.fun's dossier library, unchanged
 
 ## What it does not claim
 
-Implied value is this entry's own claim, computed from the snapshot's TVL, 7-day change and listing age.
+Implied value is this entry's own claim, computed from the snapshot's own TVL, 7-day change and record age.
 It is not a prediction that a token will be issued, and a record with no token is not proof that none
 exists: a protocol on the watchlist may still carry a token DefiLlama does not record, so every farm
 plan starts by checking the protocol's own site.

@@ -180,7 +180,9 @@ for (let i = 0; i < board.length; i++) {
   }, row.plan.length);
   row.budget = budget.budget;
   row.tag = budget.tag;
-  row.band = `80% held-out range ${shortUsd(row.implied * fit.validation.ratio_p10)}–${shortUsd(row.implied * fit.validation.ratio_p90)} (80% of ${fit.validation.n.toLocaleString('en-US')} predictions)`;
+  const band = (low: number, high: number, coverage: number, share: number): string =>
+    `${share}% held-out band ${low.toFixed(3)}–${high.toFixed(3)}× (coverage ${(coverage * 100).toFixed(1)}%)`;
+  row.band = `${band(fit.validation.band50_low, fit.validation.band50_high, fit.validation.coverage50, 50)} · ${band(fit.validation.band80_low, fit.validation.band80_high, fit.validation.coverage80, 80)}`;
 }
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'board.json'), `${JSON.stringify({ rows: board }, null, 0)}\n`);
@@ -213,7 +215,10 @@ writeFileSync(join(out, 'dossier.json'), dossier);
 reportBoard(board, snapshot);
 const dossierText = JSON.parse(Buffer.from(dossier).toString('utf8')).text.length;
 process.stdout.write(
-  `token radar: ${fit.version}; alpha ${fit.coefficients.alpha}, beta ${fit.coefficients.beta}, gamma ${fit.coefficients.gamma}, delta ${fit.coefficients.delta}; ${fit.training.n} training rows, ${fit.training.trimmed} trimmed\n` +
-    `token radar: validation ${fit.validation.folds}-fold x ${fit.validation.repeats} on n=${fit.validation.n}: median error ${fit.validation.median_factor}x, R2 ${fit.validation.r2}, within 2x ${Math.round(fit.validation.within_2x * 100)}%\n` +
-    `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (${dashboardFiles.length} files, ${sourceBytes} bytes of source), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')} (${dossier.length} bytes, ${dossierText} bytes of text)\n`,
+  `token radar: ${fit.version}; ${fit.training.n} live comparables, median multiple ${fit.training.median_multiple}x, IQR ${fit.training.iqr_low}-${fit.training.iqr_high}x; scales ${fit.scales.log_tvl_sd}/${fit.scales.log_age_sd}, age fallback ${fit.scales.age_fallback_days}d
+` +
+    `token radar: validation ${fit.validation.folds}-fold x ${fit.validation.repeats} on n=${fit.validation.n}: median error ${fit.validation.median_factor}x, within 2x ${(fit.validation.within_2x * 100).toFixed(1)}%, within 3x ${(fit.validation.within_3x * 100).toFixed(1)}%, Spearman ${fit.validation.spearman}, 50% band ${fit.validation.band50_low}-${fit.validation.band50_high}x (${(fit.validation.coverage50 * 100).toFixed(1)}%), 80% band ${fit.validation.band80_low}-${fit.validation.band80_high}x (${(fit.validation.coverage80 * 100).toFixed(1)}%)
+` +
+    `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (${dashboardFiles.length} files, ${sourceBytes} bytes of source), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')} (${dossier.length} bytes, ${dossierText} bytes of text)
+`,
 );
