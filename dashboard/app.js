@@ -130,7 +130,7 @@
     document.getElementById('hero-floor').textContent = shortUsd(D.floor_usd);
     document.getElementById('hero-count').textContent = D.board_size;
     document.getElementById('facts').textContent = M.facts;
-    document.getElementById('legend').textContent = 'Ranked by implied value · * raw change outside the ±' + M.growth_clip_pct + '% band the model clamps · above floor: off the house\'s list — wrapped, staked, bridged, CEX or versioned products, or a parent protocol · below floor: the radar\'s extension';
+    document.getElementById('legend').textContent = 'Sorted by value · * raw change outside the ±' + M.growth_clip_pct + '% band · above floor: off the list — wrapped/staked/bridged/CEX/versioned · below floor: radar extension · net carry after gas and fees; a negative net is the cost of holding the position for a launch';
     document.getElementById('hero-lede').textContent =
       'The watchlist names the ' + D.watchlist_size + ' protocols at or above the floor that record no token. The same rule, applied to every no-token protocol in the snapshot, ranks ' + D.board_size +
       ' on a valuation fitted to the ' + D.model.training.n + ' protocols whose token trades.';
@@ -225,7 +225,7 @@
     { key: 'age', label: 'Age', cls: 'num c-age' },
     { key: 'implied', label: 'Implied value', cls: 'num c-impl' },
     { key: 'mult', label: '× TVL', cls: 'num c-mult' },
-    { key: 'plan', label: 'Plan', cls: 'num c-plan', plain: true }
+    { key: 'plan', label: 'Plan · net carry', cls: 'num c-plan', plain: true }
   ];
   function buildHead() {
     var head = document.getElementById('board-head');

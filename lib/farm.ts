@@ -200,10 +200,11 @@ function riskFor(input: FarmInput): string {
 export function farmBudget(input: FarmInput, steps: number): { budget: string; tag: string; verdict: string } {
   const n = farmNumbers(input);
   const net = usdWhole(n.net);
+  const capital = n.capital < 1000 ? usd(n.capital) : `$${(n.capital / 1000).toFixed(n.capital % 1000 ? 1 : 0)}k`;
   return {
-    budget: `Tier ${n.tier}/7 · ${usd(Math.round(n.capital))} · gas ${usd(Math.round(n.gasTotal))} · ${n.hold} days · net ${net}`,
-    tag: `${steps} · ${net}`,
-    verdict: `Assumed ${(n.apr * 100).toFixed(1)}% APR: ${usd(Math.round(n.yieldUsd))} yield − ${usd(Math.round(n.gasTotal))} gas − ${usd(Math.round(n.fee))} exit fee = ${net} net carry before any launch or points${n.net < 0 ? ' — the cost of holding the position' : ''}; ${usdWhole(n.perHour)}/hour for ${Math.max(1, Math.round(n.hours))} hours`,
+    budget: `Tier ${n.tier}/7 · ${usd(n.capital)} · gas ≈ ${usd(Math.round(n.gasTotal))} · ${n.hold} days · net ≈ ${net}`,
+    tag: `${steps} · ${capital} · ${net}`,
+    verdict: `Assumed ${(n.apr * 100).toFixed(1)}% APR: ≈ ${net} net carry before any launch or points${n.net < 0 ? ' — the cost of holding the position' : ''}; ≈ ${usdWhole(n.perHour)}/hour for ${Math.max(1, Math.round(n.hours))} hours`,
   };
 }
 

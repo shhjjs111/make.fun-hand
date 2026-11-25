@@ -133,7 +133,7 @@ tr:hover .p-name .chev { opacity: 1; }
 .impl .bar i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--mint-deep), var(--mint)); }
 .impl b { font-family: var(--mono); font-weight: 500; font-size: 13px; color: var(--ink); }
 .c-mult { width: 74px; font-size: 11.5px; color: var(--muted); }
-.c-plan { width: 78px; font-size: 11px; color: var(--ink-2); }
+.c-plan { width: 124px; font-size: 10px; color: var(--ink-2); }
 .legend { padding: 5px 14px; border: 1px solid var(--line-2); border-top: 0; background: var(--panel); color: var(--faint); font-size: 10.5px; }
 .ratio { display: inline-block; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); font-family: var(--mono); font-size: 10.5px; }
 .ratio.ok { color: var(--mint); border-color: rgba(70, 230, 165, 0.3); background: rgba(70, 230, 165, 0.07); }
