@@ -1,5 +1,4 @@
-// Token Radar — the page reads window.RADAR (written by main.ts); every value is recomputed from the
-// fitted coefficients and checked against board.json.
+// Token Radar — the page reads window.RADAR (main.ts); every value is recomputed and checked against board.json.
 (function () {
   'use strict';
   var D = window.RADAR;
@@ -140,12 +139,11 @@
     document.getElementById('foot-source').textContent = D.source;
     document.getElementById('foot-scope').textContent =
       'Floor ' + usdExact(D.floor_usd) + ' · ' + D.watchlist_size + ' watchlist · ' + (D.board_size - D.watchlist_size) +
-      ' more · ' + D.live_size + ' live.';
-    var stats = document.getElementById('hero-stats');
+      ' more · ' + D.live_size + ' live.';    var stats = document.getElementById('hero-stats');
     clear(stats);
     var A = D.audit;
     [
-      ['Snapshot', whole(A.total), '= ' + A.ranked + ' + ' + A.excluded + ' + ' + A.token_no_cap + ' + ' + A.live, 'mint'],
+      ['Snapshot', whole(A.total), '= ' + A.ranked + ' ranked + ' + A.excluded + ' products excluded + ' + A.token_no_cap + ' token id, no cap + ' + A.live + ' live', 'mint wide'],
       ['Pre-token ranked', whole(A.ranked), A.watchlist + ' watchlist · ' + A.above_floor_others + ' above · ' + A.below_floor + ' below'],
       ['Watchlist', D.watchlist_size + ' / ' + D.watchlist_size, "the list is the floor: its names stay", 'mint'],
       ['Live tokens', whole(A.live), A.live_priced + ' priced · ' + (A.live - A.live_priced) + ' no cap'],
@@ -396,7 +394,7 @@
     var foot = document.getElementById('board-foot');
     clear(foot);
     foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (" + (D.audit.live - D.audit.live_priced) + " without a positive cap, marked), so the cap is fact, fitted value the model's. " +
-      "Sorted by how close the fit came: a ratio near 1.00 means the model priced the record like the market did; the outliers are why the median out-of-sample error is " + M.validation.median_factor + "×."));
+      "Sorted by closeness: a ratio near 1.00 means the fit priced the record like the market; the outliers are why the median out-of-sample error is " + M.validation.median_factor + "×."));
   }
   function openDetail(slug) {
     var row = null;
@@ -496,7 +494,7 @@
     left.appendChild(fit);
     var note = el('p', 'd-note');
     note.appendChild(bold('Read this first.'));
-    note.appendChild(document.createTextNode(' The plan is derived from this row\'s category, chains, TVL and age; board.json holds the same strings. A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit.'));
+    note.appendChild(document.createTextNode(' The plan is derived from this row\'s category, chains, TVL and age. A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit.'));
     left.appendChild(note);
     var plan = row.plan || [];
     var section = el('section', 'd-plan');

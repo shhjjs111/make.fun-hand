@@ -199,11 +199,17 @@ function riskFor(input: FarmInput): string {
 /** The plan in one line for the detail drawer, the tag the board's Plan column shows, and the net verdict. */
 export function farmBudget(input: FarmInput, steps: number): { budget: string; tag: string; verdict: string } {
   const n = farmNumbers(input);
+  const net = usdWhole(n.net);
   return {
-    budget: `Tier ${n.tier}/7 · capital ${usd(n.capital)} · gas ${usd(n.gasTotal)} · ${n.hold} days · net ${usdSigned(n.net)}`,
-    tag: `${steps} · ${n.capital < 1000 ? usd(n.capital) : `$${Math.round(n.capital / 1000)}k`}`,
-    verdict: `Assumed ${(n.apr * 100).toFixed(1)}% APR: ${usd(n.yieldUsd)} yield − ${usd(n.gasTotal)} gas − ${usd(n.fee)} exit fee = ${usdSigned(n.net)} net carry, before any launch or points; ${usdSigned(n.perHour)}/hour for ${Math.max(1, Math.round(n.hours))} hours`,
+    budget: `Tier ${n.tier}/7 · ${usd(Math.round(n.capital))} · gas ${usd(Math.round(n.gasTotal))} · ${n.hold} days · net ${net}`,
+    tag: `${steps} · ${net}`,
+    verdict: `Assumed ${(n.apr * 100).toFixed(1)}% APR: ${usd(Math.round(n.yieldUsd))} yield − ${usd(Math.round(n.gasTotal))} gas − ${usd(Math.round(n.fee))} exit fee = ${net} net carry before any launch or points${n.net < 0 ? ' — the cost of holding the position' : ''}; ${usdWhole(n.perHour)}/hour for ${Math.max(1, Math.round(n.hours))} hours`,
   };
+}
+
+/** A signed whole-dollar figure for the strip, the verdict and the board's Plan tag: +$13, −$40. */
+function usdWhole(value: number): string {
+  return `${value < 0 ? '−' : '+'}$${Math.round(Math.abs(value)).toLocaleString('en-US')}`;
 }
 
 /** An assumed market yield by bucket (the snapshot carries none), the exit fee and the seven capital tiers. */
