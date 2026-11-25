@@ -122,5 +122,9 @@ for (const spec of shots) {
 socket.close();
 child.kill();
 await sleep(300);
-rmSync(profile, { recursive: true, force: true });
+try {
+  rmSync(profile, { recursive: true, force: true });
+} catch {
+  // A locked profile directory is the browser's business, not the capture's: the frames are written.
+}
 process.exit(failed === 0 ? 0 : 1);

@@ -11,7 +11,10 @@ and hands the reader a static dashboard with a detail view per protocol.
 The snapshot is DefiLlama's protocol index fetched on 2026-11-14: 758 protocols, 40 on the house's
 watchlist (no token on record, at or above the $50M floor, not a wrapped, staked or bridged product).
 The watchlist is a floor, never a ceiling, so the radar applies the same product rules below it and
-ranks **176 protocols**: the 40 watchlist names and 136 below the floor.
+ranks **195 protocols**: the 40 watchlist names, 19 more above the floor that the house's list leaves out,
+and 136 below it. A full-snapshot audit accounts for all 758: 195 ranked pre-token, 147 no-token products
+excluded (wrapped, staked or bridged products, CEX and versioned pools), 272 protocols with a token id but
+no market cap, and 144 live tokens.
 
 ## The value model
 
@@ -43,7 +46,7 @@ On this snapshot:
 The cross-section is noisy, and the dashboard says so: the ranking is the model's claim, the absolute
 value is an estimate. Growth and age are small tilts, and every row shows both multipliers.
 
-The same equation is applied to the 176 pre-token protocols. No protocol name is special-cased: the
+The same equation is applied to the 195 pre-token protocols. No protocol name is special-cased: the
 category map knows DefiLlama's taxonomy, not a list of winners.
 
 ## The page
@@ -53,7 +56,7 @@ no network request. It reads `data.js`, which the program writes beside the page
 
 - a **board** of every pre-token protocol, sortable on every column, filterable by search, category,
   chain, age and watchlist membership;
-- a **live-token tab** with the 128 token-bearing protocols, the market's cap beside the model's fitted
+- a **live-token tab** with the 144 token-bearing protocols (128 with a priced cap), the market's cap beside the model's fitted
   value, sorted by how close the fit came;
 - a **detail drawer** for every protocol: its record, the model's five multipliers, the arithmetic that
   produces its value, a check that the page's own recomputation matches `board.json`, and a nine-step
@@ -70,7 +73,7 @@ MAKEFUN_OUTPUT_DIR=out node main.ts --input <kit>/input/snapshot.json
 Node 22.18 or later, the standard library only, no install. The program writes:
 
 ```text
-out/board.json        the ranked board: 176 rows, each with rank, implied value and farm steps
+out/board.json        the ranked board: 195 rows, each with rank, implied value and farm steps
 out/data.js           the dashboard's inputs and the fitted model
 out/dashboard/        the static page
 out/screenshots/      the three captured views
@@ -86,7 +89,7 @@ node tools/gate.mjs --snapshot <kit>/input/snapshot.json --out out
 The tool checks the seven rows make.fun's scorer checks (board shape and ordering, watchlist coverage,
 farm steps, dashboard files and network addresses, screenshots, dossier bytes) plus two local checks:
 the dashboard's text source fits the dossier's 64 KiB cap, and a local Chromium re-runs the page's own
-model and compares all 176 values and plans with `board.json`.
+model and compares all 195 values and plans with `board.json`.
 
 Two runs of `main.ts` into different directories are byte-for-byte identical: the fit has no random
 seed in it, the validation's folds come from a fixed PRNG, and every write is ordered.

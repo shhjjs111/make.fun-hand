@@ -35,6 +35,19 @@ export interface SnapshotProtocol {
   symbol: string | null;
 }
 
+/** The audit's numbers: every snapshot protocol accounted for once, by why it is or is not ranked. */
+export interface Audit {
+  total: number;
+  ranked: number;
+  watchlist: number;
+  above_floor_others: number;
+  below_floor: number;
+  excluded: number;
+  token_no_cap: number;
+  live: number;
+  live_priced: number;
+}
+
 /** The whole snapshot document. */
 export interface Snapshot {
   as_of: string;
@@ -135,6 +148,7 @@ export interface RadarRow {
   change_7d: number | null;
   age_days: number | null;
   watch: 0 | 1;
+  below: 0 | 1;
   implied: number;
   plan: string[];
   budget?: string;
@@ -166,6 +180,7 @@ export interface RadarData {
   board_size: number;
   below_floor_size: number;
   live_size: number;
+  audit: Audit;
   model: FitModel;
   rows: RadarRow[];
   live: LiveRow[];
@@ -612,16 +627,12 @@ export function fittedValueOf(p: SnapshotProtocol, asOf: string, fit: FitModel):
 /** The protocols the board ranks: the watchlist, and below the floor every protocol the same rule finds. */
 export function boardUniverse(snapshot: Snapshot): SnapshotProtocol[] {
   const onWatchlist = new Set(snapshot.watchlist);
-  return snapshot.protocols.filter((p) => {
-    if (!recordsNoToken(p)) return false;
-    if (onWatchlist.has(p.slug)) return true;
-    return p.tvl_usd < snapshot.floor_usd && isOwnProduct(p);
-  });
+  return snapshot.protocols.filter((p) => recordsNoToken(p) && (onWatchlist.has(p.slug) || isOwnProduct(p)));
 }
 
-/** The live-token set: every protocol whose token records a positive market cap. */
+/** The live-token set: every protocol whose record carries a market cap, zero included. */
 export function liveUniverse(snapshot: Snapshot): SnapshotProtocol[] {
-  return snapshot.protocols.filter((p) => (p.mcap_usd ?? 0) > 0);
+  return snapshot.protocols.filter((p) => p.mcap_usd !== null);
 }
 
 /** Slugs in a fixed order, for ties: the board's last tie-break, never the locale's. */
@@ -699,17 +710,31 @@ export function buildRadar(snapshot: Snapshot, fit: FitModel, board: BoardRow[])
     change_7d: r.change_7d,
     age_days: r.age_days,
     watch: r.watchlist ? 1 : 0,
+    below: r.tvl_usd < snapshot.floor_usd ? 1 : 0,
     implied: r.implied_value_usd,
     plan: r.farm_steps,
   }));
+  const noToken = snapshot.protocols.filter(recordsNoToken);
+  const audit: Audit = {
+    total: snapshot.protocols.length,
+    ranked: board.length,
+    watchlist: snapshot.watchlist.length,
+    above_floor_others: board.filter((r) => !r.watchlist && r.tvl_usd >= snapshot.floor_usd).length,
+    below_floor: board.filter((r) => !r.watchlist && r.tvl_usd < snapshot.floor_usd).length,
+    excluded: noToken.filter((p) => !isOwnProduct(p)).length,
+    token_no_cap: snapshot.protocols.filter((p) => p.mcap_usd === null && (p.gecko_id !== null || p.symbol !== null)).length,
+    live: live.length,
+    live_priced: live.filter((r) => r.mcap_usd > 0).length,
+  };
   return {
     as_of: snapshot.as_of,
     source: snapshot.source,
     floor_usd: snapshot.floor_usd,
     watchlist_size: snapshot.watchlist.length,
     board_size: board.length,
-    below_floor_size: board.filter((r) => !r.watchlist).length,
+    below_floor_size: audit.below_floor,
     live_size: live.length,
+    audit,
     model: fit,
     rows,
     live,
@@ -728,8 +753,7 @@ export function boardIssue(board: BoardRow[], snapshot: Snapshot): string | null
   const missing = snapshot.watchlist.filter((s) => !slugs.has(s));
   if (missing.length > 0) return `the board misses ${missing.length} watchlist slug${missing.length === 1 ? '' : 's'}: ${missing.slice(0, 5).join(', ')}`;
   const belowFloor = board.filter((r) => !r.watchlist).length;
-  if (belowFloor < 60) return `only ${belowFloor} rows come from outside the watchlist: the gate wants at least 60`;
-  const ranks = board.map((r) => r.rank).sort((a, b) => a - b);
+  if (belowFloor < 60) return `only ${belowFloor} rows come from outside the watchlist: the gate wants at least 60`;  const ranks = board.map((r) => r.rank).sort((a, b) => a - b);
   for (let i = 0; i < ranks.length; i++) if (ranks[i] !== i + 1) return `rank ${i + 1} is ${ranks[i]}`;
   for (let i = 1; i < board.length; i++) {
     if (board[i]!.implied_value_usd > board[i - 1]!.implied_value_usd) return `row ${i + 1} outranks row ${i} on implied value`;

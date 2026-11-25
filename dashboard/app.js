@@ -1,6 +1,6 @@
 // Token Radar — the page's behaviour. window.RADAR (written beside dashboard/ by main.ts) carries the
-// snapshot's provenance, the fitted model, the board's inputs and the live-token rows; every implied
-// value is recomputed from the fitted coefficients and checked against board.json's. No network.
+// snapshot's provenance, the fitted model, the board's inputs and the live rows; every implied value is
+// recomputed from the fitted coefficients and checked against board.json's. No network.
 (function () {
   'use strict';
   var D = window.RADAR;
@@ -24,12 +24,11 @@
   function changeCell(row) {
     var raw = row.change_7d;
     if (!isNum(raw)) return { text: '—', cls: ' flat', title: '' };
-    var g = Math.max(-M.growth_clip_pct, Math.min(M.growth_clip_pct, raw));
     var capped = Math.abs(raw) > M.growth_clip_pct;
     return {
       text: pct(raw) + (capped ? '*' : ''),
       cls: (raw >= 0 ? ' up' : ' down') + (capped ? ' capped' : ''),
-      title: capped ? 'the model clamps it to ' + pct(g) + ' (the ±' + M.growth_clip_pct + '% band)' : ''
+      title: capped ? 'the model clamps it to the ±' + M.growth_clip_pct + '% band' : ''
     };
   }
   function mult(v) { return isNum(v) ? v.toFixed(3) + '×' : '—'; }
@@ -62,9 +61,8 @@
     return { base: base, size: size, growth: growth, age: age, category: category, value: value };
   }
   //
-  // Each row's plan and budget travel in data.js; main.ts derives them in lib/farm.ts and writes the
-  // same strings into board.json. The gate's browser check compares the page's rendering with the board.
-  // The page's own arithmetic is exposed so that check tests this code, not a copy of it.
+  // Each row's plan and budget travel in data.js (main.ts derives them in lib/farm.ts); the gate's
+  // browser check compares the page's rendering with board.json, and this exposes the page's arithmetic.
   window.radarParts = partsFor;
   var state = { tab: 'pre', q: '', category: 'all', chain: 'all', age: 'all', watch: false, sort: 'rank', dir: 1, open: null };
   var maxImplied = 1;
@@ -136,29 +134,33 @@
     document.getElementById('hero-floor').textContent = shortUsd(D.floor_usd);
     document.getElementById('hero-count').textContent = D.board_size;
     document.getElementById('facts').textContent = M.facts;
-    document.getElementById('legend').textContent = 'Ranked by implied value · * raw 7-day change outside the model\'s ±' + M.growth_clip_pct + '% band, which the model clamps · watchlist: the house\'s list · below floor: the radar\'s extension';
+    document.getElementById('legend').textContent = 'Ranked by implied value · * raw change outside the ±' + M.growth_clip_pct + '% band the model clamps · watchlist: the house\'s list · below/above floor: the radar\'s extension';
     document.getElementById('hero-lede').textContent =
-      'The watchlist names the ' + D.watchlist_size + ' protocols at or above the floor that record no token. It is a floor, not a ceiling: the same rule below it adds ' + D.below_floor_size +
-      ', and all ' + D.board_size + ' rank together on a valuation fitted to the ' + D.model.training.n + ' protocols whose token already trades.';
+      'The watchlist names the ' + D.watchlist_size + ' protocols at or above the floor that record no token. The radar applies the same rule to every no-token protocol in the snapshot and ranks all ' + D.board_size +
+      ' on a valuation fitted to the ' + D.model.training.n + ' protocols whose token trades.';
     document.getElementById('tab-pre-count').textContent = D.board_size;
     document.getElementById('tab-live-count').textContent = D.live_size;
     document.getElementById('foot-source').textContent = D.source;
     document.getElementById('foot-scope').textContent =
-      'Floor ' + usdExact(D.floor_usd) + ' · ' + D.watchlist_size + ' watchlist protocols, all ranked · ' + D.below_floor_size +
-      ' rows from below the floor · ' + D.live_size + ' live tokens in the reference set · ' + D.as_of + '.';
+      'Floor ' + usdExact(D.floor_usd) + ' · ' + D.watchlist_size + ' watchlist protocols, all ranked · ' + (D.board_size - D.watchlist_size) +
+      ' other no-token protocols · ' + D.live_size + ' live tokens · ' + D.as_of + '.';
     var stats = document.getElementById('hero-stats');
     clear(stats);
     [
       ['Watchlist covered', D.watchlist_size + ' / ' + D.watchlist_size],
-      ['Protocols ranked', whole(D.board_size)],
+      ['Pre-token ranked', whole(D.board_size)],
       ['Rows below the floor', whole(D.below_floor_size)],
-      ['Live tokens in the fit', whole(D.model.training.n)],
+      ['Live tokens', whole(D.live_size)],
     ].forEach(function (s) {
       var row = el('div', 'fact');
       row.appendChild(el('span', null, s[0]));
       row.appendChild(el('b', null, s[1]));
       stats.appendChild(row);
     });
+    var A = D.audit;
+    document.getElementById('audit').textContent =
+      'Audit · ' + A.total + ' protocols: ' + A.ranked + ' ranked (' + A.watchlist + ' watchlist + ' + (A.ranked - A.watchlist) + ' other no-token) · ' +
+      A.excluded + ' products excluded · ' + A.token_no_cap + ' token id, no cap · ' + A.live + ' live (' + A.live_priced + ' priced)';
     var coef = D.model.coefficients;
     var equation = document.getElementById('equation');
     clear(equation);
@@ -268,7 +270,7 @@
     var proto = el('td', 'c-protocol');
     var name = el('div', 'p-name');
     name.appendChild(document.createTextNode(row.name));
-    name.appendChild(el('span', row.watch ? 'watchdot' : 'watchdot floor', row.watch ? 'watchlist' : 'below floor'));
+    name.appendChild(el('span', row.watch ? 'watchdot' : 'watchdot floor', row.watch ? 'watchlist' : row.below ? 'below floor' : 'above floor'));
     name.appendChild(el('span', 'chev', '›'));
     proto.appendChild(name);
     var sub = el('div', 'p-sub');
@@ -392,8 +394,8 @@
     body.appendChild(fragment);
     var foot = document.getElementById('board-foot');
     clear(foot);
-    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a positive market cap, so the market cap is a fact and the fitted value is what the model would have said about the same record. " +
-      "Sorted by how close the fit came, closest first: a ratio near 1.00 means the model priced the record like the market did. The outliers at the bottom are real too — a chain's token priced against a bridge's TVL, a market cap with no TVL behind it — and they are why the median out-of-sample error is " + M.validation.median_factor + "×."));
+    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (some at zero), so the cap is a fact and the fitted value is what the model would have said about the same record. " +
+      "Sorted by how close the fit came: a ratio near 1.00 means the model priced the record like the market did; the outliers are why the median out-of-sample error is " + M.validation.median_factor + "×."));
   }
   function openDetail(slug) {
     var row = null;
@@ -408,7 +410,7 @@
     var titleBox = el('div');
     var eyebrow = el('div', 'd-eyebrow');
     eyebrow.appendChild(el('b', null, 'Rank ' + row.rank + ' of ' + D.board_size));
-    eyebrow.appendChild(document.createTextNode(' · ' + (row.watch ? 'on the watchlist' : 'found below the floor')));
+    eyebrow.appendChild(document.createTextNode(' · ' + (row.watch ? 'on the watchlist' : row.below ? 'found below the floor' : 'above the floor, not on the list')));
     titleBox.appendChild(eyebrow);
     var title = el('h2', 'd-title', row.name);
     title.id = 'detail-title';
@@ -488,11 +490,11 @@
     }
     left.appendChild(check);
     var fit = el('div', 'd-check');
-    fit.appendChild(document.createTextNode('Fit: ' + M.training.n + ' live tokens · ' + M.validation.folds + '×' + M.validation.repeats + '-fold CV · median error ' + M.validation.median_factor + '× · R² ' + M.validation.r2.toFixed(2) + ' · ' + Math.round(M.validation.within_2x * 100) + '% within 2×.'));
+    fit.appendChild(document.createTextNode('Fit: ' + M.training.n + ' live tokens · ' + M.validation.folds + '×' + M.validation.repeats + '-fold CV · median error ' + M.validation.median_factor + '× · R² ' + M.validation.r2.toFixed(2) + '.'));
     left.appendChild(fit);
     var note = el('p', 'd-note');
     note.appendChild(bold('Read this first.'));
-    note.appendChild(document.createTextNode(' The plan is derived from the protocol\'s category, chains, TVL and age by the entry\'s program, and the same strings are in board.json. A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit, and never pay to claim a reward. The value is the entry\'s claim, not a prediction that a token will be issued.'));
+    note.appendChild(document.createTextNode(' The plan is derived from this row\'s category, chains, TVL and age, and the same strings are in board.json. A record with no token is not proof that none exists: confirm on the protocol\'s own site before you deposit, and never pay to claim a reward.'));
     left.appendChild(note);
     var plan = row.plan || [];
     var section = el('section', 'd-plan');
