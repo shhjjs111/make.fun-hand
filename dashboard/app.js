@@ -1,5 +1,5 @@
-// Token Radar — the page's behaviour. window.RADAR (written by main.ts) carries the snapshot, the fitted
-// model, the board's inputs and the live rows; every value is recomputed and checked against board.json.
+// Token Radar — the page's behaviour. window.RADAR (main.ts) has the snapshot, model, board and live rows;
+// every value is recomputed from the fitted coefficients and checked against board.json's.
 (function () {
   'use strict';
   var D = window.RADAR;
@@ -59,9 +59,7 @@
     var value = Math.max(1, Math.round(row.tvl_usd * base * size * growth * age * category));
     return { base: base, size: size, growth: growth, age: age, category: category, value: value };
   }
-  //
-  // Plans and budgets travel in data.js (derived in lib/farm.ts); this exposes the page's arithmetic to
-  // the gate's browser check, which compares the rendering with board.json.
+  // Plans travel in data.js; this exposes the page's arithmetic to the gate's browser check.
   window.radarParts = partsFor;
   var state = { tab: 'pre', q: '', category: 'all', chain: 'all', age: 'all', watch: false, sort: 'rank', dir: 1, open: null };
   var maxImplied = 1;
@@ -133,27 +131,28 @@
     document.getElementById('hero-floor').textContent = shortUsd(D.floor_usd);
     document.getElementById('hero-count').textContent = D.board_size;
     document.getElementById('facts').textContent = M.facts;
-    document.getElementById('legend').textContent = 'Ranked by implied value · * raw change outside the ±' + M.growth_clip_pct + '% band the model clamps · above floor: off the house\'s list by its product rule · below floor: the radar\'s extension';
+    document.getElementById('legend').textContent = 'Ranked by implied value · * raw change outside the ±' + M.growth_clip_pct + '% band the model clamps · above floor: off the house\'s list — wrapped, staked, bridged, CEX or versioned products, or a parent protocol · below floor: the radar\'s extension';
     document.getElementById('hero-lede').textContent =
-      'The watchlist names the ' + D.watchlist_size + ' protocols at or above the floor that record no token. The same rule, applied to every no-token protocol in the snapshot, ranks all ' + D.board_size + '.';
+      'The watchlist names the ' + D.watchlist_size + ' protocols at or above the floor that record no token. The same rule, applied to every no-token protocol in the snapshot, ranks ' + D.board_size +
+      ' on a valuation fitted to the ' + D.model.training.n + ' protocols whose token trades.';
     document.getElementById('tab-pre-count').textContent = D.board_size;
     document.getElementById('tab-live-count').textContent = D.live_size;
     document.getElementById('foot-source').textContent = D.source;
     document.getElementById('foot-scope').textContent =
       'Floor ' + usdExact(D.floor_usd) + ' · ' + D.watchlist_size + ' watchlist protocols, all ranked · ' + (D.board_size - D.watchlist_size) +
-      ' other no-token protocols · ' + D.live_size + ' live tokens · ' + D.as_of + '.';
+      ' more no-token · ' + D.live_size + ' live · ' + D.as_of + '.';
     var stats = document.getElementById('hero-stats');
     clear(stats);
     var A = D.audit;
     [
-      ['Snapshot', whole(A.total)],
+      ['Snapshot', whole(A.total), '', 'mint'],
       ['Pre-token ranked', whole(A.ranked), A.watchlist + ' watchlist · ' + A.above_floor_others + ' above floor · ' + A.below_floor + ' below'],
-      ['Watchlist covered', D.watchlist_size + ' / ' + D.watchlist_size],
+      ['Watchlist covered', D.watchlist_size + ' / ' + D.watchlist_size, '', 'mint'],
       ['Live tokens', whole(A.live), A.live_priced + ' priced · ' + (A.live - A.live_priced) + ' no cap'],
-      ['Products excluded', whole(A.excluded)],
+      ['Products excluded', whole(A.excluded), 'wrapped · staked · bridged · CEX · versioned'],
       ['Token id, no cap', whole(A.token_no_cap)],
     ].forEach(function (s) {
-      var row = el('div', 'fact');
+      var row = el('div', 'fact' + (s[3] ? ' ' + s[3] : ''));
       row.appendChild(el('span', null, s[0]));
       row.appendChild(el('b', null, s[1]));
       if (s[2]) row.appendChild(el('em', null, s[2]));
@@ -396,7 +395,7 @@
     body.appendChild(fragment);
     var foot = document.getElementById('board-foot');
     clear(foot);
-    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (the " + (D.audit.live - D.audit.live_priced) + " without a positive cap are marked), so the cap is a fact and the fitted value is what the model would have said about the same record. " +
+    foot.appendChild(document.createTextNode("The live set is the model's own exam: these " + D.live_size + " protocols record a market cap (the " + (D.audit.live - D.audit.live_priced) + " without a positive cap are marked), so the cap is a fact and the fitted value is what the model says about the same record. " +
       "Sorted by how close the fit came: a ratio near 1.00 means the model priced the record like the market did; the outliers are why the median out-of-sample error is " + M.validation.median_factor + "×."));
   }
   function openDetail(slug) {
