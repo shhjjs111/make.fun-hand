@@ -3,130 +3,96 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token Radar — pre-token protocols ranked by implied value</title>
+<title>Launch Radar — pre-token protocols valued from their own record</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<header class="masthead">
-  <div class="masthead-in">
-    <a class="brand" href="#top">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-name">Token<span>Radar</span></span>
-      <span class="brand-tag">pre-token valuations</span>
-    </a>
-    <div class="mast-meta">
-      <span class="pill"><b id="meta-date">—</b> snapshot</span>
-      <span class="pill" id="meta-model">model</span>
-      <span class="pill dim">DefiLlama protocol index</span>
-    </div>
+<header class="mast">
+  <div class="mast-in">
+    <div class="brand"><i aria-hidden="true"></i><b>Launch<span>Radar</span></b><em>pre-token protocols, valued from their own record</em></div>
+    <div class="mast-meta"><span>DefiLlama snapshot <b id="asof">—</b></span><span>model radar-3, refitted in this browser</span></div>
   </div>
 </header>
-<main id="board">
-  <section class="hero" id="top">
-    <div class="hero-copy">
-      <p class="eyebrow">Launch radar · snapshot <span id="hero-asof">—</span> · floor <span id="hero-floor">—</span></p>
-      <h1><em id="hero-count">—</em> protocols whose record carries no token, ranked by implied value</h1>
-      <p class="lede" id="hero-lede">—</p>
-      <p class="disclaimer">Implied value is this entry's own claim, computed from the snapshot's TVL, 7-day change and listing age. It is not a prediction that a token will be issued, and a record with no token is not proof that none exists.</p>
-    </div>
-    <dl class="stats" id="hero-stats"></dl>
-  </section>
-  <section class="modelbar" aria-label="The fitted model">
-    <div class="modelbar-eq">
-      <span class="tag">fitted model</span>
-      <div class="modelbar-code">
-        <code id="equation">—</code>
-        <p class="modelbar-facts" id="facts">—</p>
+<main id="top">
+  <section id="board-view">
+    <div class="kpis" id="kpis"></div>
+    <p class="formula"><b>Implied value</b> = TVL × fitted multiple <span>(the value if a token launches)</span> × token odds <span>(from how long peers ran before recording one)</span>. Each coefficient is fitted on this snapshot and tested held-out.</p>
+    <section class="panel ledger">
+      <div class="ph"><h2>Protocol accounting</h2><p>all <b id="led-total">—</b> snapshot protocols in exactly one group: <b id="led-ranked">—</b> ranked as pre-token, <b id="led-token">—</b> already record a token, <b id="led-out">—</b> left out by the house list's own rules</p></div>
+      <div class="stack" id="stack"></div>
+      <div class="legend" id="led-legend"></div>
+      <div class="checks" id="led-checks"></div>
+    </section>
+    <section class="panel evidence">
+      <div class="ph"><h2>Out-of-sample evidence</h2><p>a term is kept only if it lowers the held-out miss in both tests: leave-one-out, and walk-forward (tokens listed earlier price those listed later)</p></div>
+      <div class="ev-grid">
+        <div><h3>Value if a token launches · typical miss, <span id="ev-nvalue">—</span> traded tokens</h3><div id="ev-value"></div></div>
+        <div><h3>Token odds · Brier score (share called right), <span id="ev-npeers">—</span> peers</h3><div id="ev-odds"></div></div>
+        <div><h3>Is the printed range honest?</h3><div id="ev-cov"></div><p class="boot" id="ev-boot">—</p></div>
       </div>
-    </div>
+      <p class="reading" id="ev-reading">—</p>
+    </section>
+    <div class="toolbar" id="board-tools"></div>
+    <div class="tablewrap"><table class="board" id="board-table"><thead id="board-head"></thead><tbody id="board-body"></tbody></table></div>
+    <p class="boardfoot" id="board-foot">—</p>
+    <p class="footline">Rank is the model's claim, not a price: the same function scores every row; select one for its arithmetic.</p>
   </section>
-  <p class="audit" id="audit">—</p>
 
-  <section class="workspace" aria-label="The board">
-    <div class="toolbar">
-      <div class="tabs" role="tablist" aria-label="Token status">
-        <button type="button" role="tab" id="tab-pre" aria-selected="true">Pre-token board <b id="tab-pre-count">—</b></button>
-        <button type="button" role="tab" id="tab-live" aria-selected="false">Live tokens <b id="tab-live-count">—</b></button>
-      </div>
-      <label class="search">
-        <span class="sr">Search protocols</span>
-        <input type="search" id="q" placeholder="Search name, category or chain" autocomplete="off" spellcheck="false">
-      </label>
-      <label class="select"><span>Category</span><select id="f-category"></select></label>
-      <label class="select"><span>Chain</span><select id="f-chain"></select></label>
-      <label class="select"><span>Age</span><select id="f-age">
-        <option value="all">Any age</option>
-        <option value="new">Under 6 months</option>
-        <option value="mid">6 to 18 months</option>
-        <option value="old">Over 18 months</option>
-        <option value="none">No listing date</option>
-      </select></label>
-      <button type="button" class="chip" id="f-watch" aria-pressed="false">Watchlist</button>
-    </div>
-    <p class="filterline" id="filterline" hidden></p>
-    <p class="legend" id="legend">—</p>
-    <div class="tablewrap" id="pre-wrap">
-      <table class="board-table">
-        <caption class="sr">Pre-token protocols ranked by implied token value</caption>
-        <thead><tr id="board-head"></tr></thead>
-        <tbody id="board-body"></tbody>
-      </table>
-      <div class="empty" id="board-empty" hidden>
-        <b>No protocol matches those filters</b>
-        <span>Clear the search or pick another category to see the board again.</span>
-        <button type="button" class="chip" data-reset>Clear filters</button>
-      </div>
-    </div>
-    <div class="tablewrap" id="live-wrap" hidden>
-      <table class="board-table">
-        <caption class="sr">Token-bearing protocols: the market's cap beside the model's fitted value</caption>
-        <thead><tr id="live-head"></tr></thead>
-        <tbody id="live-body"></tbody>
-      </table>
-    </div>
-    <p class="board-foot" id="board-foot">—</p>
+  <section id="detail-view" hidden></section>
+  <section id="decision-view" hidden>
+    <div class="decision" id="decision-strip"></div>
+    <div class="toolbar" id="decision-tools"></div>
+    <p class="filterline" id="decision-line"></p>
+    <div class="tablewrap"><table class="board" id="decision-table"><thead id="decision-head"></thead><tbody id="decision-body"></tbody></table></div>
+    <p class="boardfoot" id="decision-foot">—</p>
   </section>
-  <section class="method" id="method" aria-labelledby="method-title">
+
+  <section id="method-view" hidden>
     <div class="method-head">
       <p class="eyebrow">Methodology</p>
-      <h2 id="method-title">How implied value is computed</h2>
-      <p class="method-lede">One equation, fitted to the snapshot's own token-bearing protocols, then applied to the protocols that record no token. No protocol is named in the model: every row is scored by the same function, and the page recomputes each row's value from its inputs and checks it against <code>board.json</code>.</p>
+      <h2>How implied value is computed</h2>
+      <p class="lede">One equation for the value if a token launches and one for the odds it does, fitted on the snapshot's own token-bearing protocols. No protocol is named: every row is scored by the same function, and the page recomputes each row's value from its inputs and checks it against board.json.</p>
+      <p class="flow"><b>main.ts</b> fits the model → <b>data.js</b> carries the coefficients and rows → the page recomputes every row → <b>board.json</b> is the value the page checks against.</p>
     </div>
     <div class="method-grid">
-      <article class="card">
-        <h3>The equation</h3>
-        <pre class="formula" id="formula">—</pre>
-        <p class="card-note" id="formula-note">—</p>
-        <h3 class="mt">Fitted coefficients</h3>
-        <table class="mini" id="coef-table"><tbody></tbody></table>
+      <article class="card a">
+        <h3>The value model</h3>
+        <pre class="formula-block" id="m-formula">—</pre>
+        <p class="note">base is the fitted multiple at $100M TVL; size_slope is the elasticity; category is a shrunk effect (ridge 16); odds are fitted on peer records, never on names.</p>
+        <table class="mini" id="m-coef"><thead><tr><th>Term</th><th>Value</th><th>S.E.</th><th>Reads as</th></tr></thead><tbody></tbody></table>
       </article>
-      <article class="card">
+      <article class="card b">
         <h3>The fit</h3>
-        <dl class="fitfacts" id="fit-facts"></dl>
-        <h3 class="mt">Out-of-sample validation</h3>
-        <p class="card-note" id="validation-note">—</p>
-        <div class="kpis" id="validation-kpis"></div>
+        <dl class="facts" id="m-facts"></dl>
+        <p class="note">Least-trimmed squares refits on the kept 80% of residuals until the kept set settles; the category dummies carry a ridge penalty of 16, the intercept and size slope are unpenalised.</p>
       </article>
-      <article class="card">
-        <h3>What the model does, and what it does not claim</h3>
-        <div class="prose" id="limitations">—</div>
+      <article class="card c">
+        <h3>Out-of-sample evidence</h3>
+        <div class="kpis small" id="m-kpis"></div>
+        <p class="note" id="m-evnote">—</p>
+        <p class="note" id="m-terms">—</p>
       </article>
-      <article class="card">
+      <article class="card d">
         <h3>Category multipliers</h3>
-        <p class="card-note">The eleven buckets a DefiLlama category maps to, the fitted effect on the multiple, and how many training rows each holds. Small buckets shrink toward 1.00 under the ridge penalty.</p>
-        <table class="mini buckets" id="bucket-table"><thead><tr><th scope="col">Bucket</th><th scope="col">Effect</th><th scope="col">Multiplier</th><th scope="col">Rows</th></tr></thead><tbody></tbody></table>
+        <table class="mini buckets" id="m-buckets"><thead><tr><th>Bucket</th><th>Effect</th><th>Multiplier</th><th>Rows</th></tr></thead><tbody></tbody></table>
+        <p class="note">DefiLlama categories map to these eleven buckets; small buckets shrink toward 1.00 under the ridge penalty.</p>
+      </article>
+      <article class="card e">
+        <h3>Farm verdict</h3>
+        <pre class="formula-block small" id="m-farm">—</pre>
+        <p class="note" id="m-farm-defaults">—</p>
+        <p class="note" id="m-farm-thresholds">—</p>
+        <p class="note" id="m-farm-counts">—</p>
+        <p class="note" id="m-farm-caveat">—</p>
+      </article>
+      <article class="card f">
+        <h3>Proof and limits</h3>
+        <ul class="bullets" id="m-proof"></ul>
       </article>
     </div>
+    <p class="method-foot" id="m-foot">—</p>
   </section>
 </main>
-<footer class="foot">
-  <div class="foot-in">
-    <p><b>Provenance.</b> <span id="foot-source">—</span></p>
-    <p><b>Scope.</b> <span id="foot-scope">—</span></p>
-    <p><b>No network.</b> The page makes no request: every number is in <code>data.js</code>, written beside this page by the entry's program. Implied value is the entry's claim, never make.fun's.</p>
-  </div>
-</footer>
-<dialog class="drawer" id="detail" aria-labelledby="detail-title"><div class="drawer-in" id="detail-body"></div></dialog>
 <script src="../data.js"></script>
 <script src="app.js"></script>
 </body>

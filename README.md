@@ -1,115 +1,127 @@
-# Token Radar
+# Launch Radar
 
 [![make.fun · token-radar-01](https://make.fun/badge/token-radar-01.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
 [![rank](https://make.fun/badge/token-radar-01/shhjjs111/make.fun-hand/rank.svg)](https://make.fun/bounty/token-radar-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
 [![reward](https://make.fun/badge/token-radar-01/shhjjs111/make.fun-hand/reward.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
 
-A token-launch radar for make.fun's `token-radar-01` bounty: it reads the sealed protocol snapshot,
-ranks the protocols whose record carries no token by an implied token value, gives each one a farm plan,
-and hands the reader a static dashboard with a detail view per protocol.
+The launch radar for make.fun's `token-radar-01`: one sealed DefiLlama snapshot in, a ranked board of
+the protocols whose record carries no token, a value-if-it-launches estimate, token odds, a
+held-out range, and a farm verdict with a ten-step plan.
 
-The snapshot is DefiLlama's protocol index fetched on 2026-11-14: 758 protocols, 40 on the house's
-watchlist (no token on record, at or above the $50M floor, not a wrapped, staked or bridged product).
-The watchlist is a floor, never a ceiling, so the radar applies the same product rules below it and
-ranks **195 protocols**: the 40 watchlist names, 19 more above the floor that the house's list leaves out,
-and 136 below it. A full-snapshot audit accounts for all 758: 195 ranked pre-token, 147 no-token products
-excluded (wrapped, staked or bridged products, CEX and versioned pools), 272 protocols with a token id but
-no market cap, and 144 live tokens.
+The snapshot is the 2026-11-14 protocol index: 758 protocols. The board ranks **195**: the 40
+watchlist names, 19 more above the floor the house list leaves out, and 136 below it. The ledger
+accounts for every record once: 195 ranked, 128 priced token records, 288 token records without a
+usable cap, and 147 products left out by the house list's own rules.
 
-## The value model
+## The model
 
-The 128 protocols in the snapshot that record both a TVL and a positive market cap are the training set.
-The model is a log-linear fit, in log space:
+Two claims, multiplied:
 
 ```text
-ln(mcap) = α + β·ln(TVL / $100M) + γ·g + δ·ln(1 + age_years) + effect[bucket]
+value_if_launches = TVL × base_multiple × (TVL / $100M) ^ size_slope × category_effect
+token_odds        = (F(H) − F(a)) / (1 − F(a))
+implied           = value_if_launches × token_odds
 ```
 
-with `g` the 7-day TVL change clamped to ±50%, eleven category buckets, a ridge penalty on the bucket
-dummies, and least-trimmed squares (the worst 20% of residuals are refitted out each iteration, because a
-few records price a chain token or a sibling token against a pool's TVL). The intercept is then
-calibrated so the median token-bearing protocol is priced at its market cap.
+The value fit is least-trimmed squares on `ln(mcap / TVL)` over the **95** protocols that record a
+positive market cap and a listing date, with eleven category effects and ridge 16 on the dummies:
+`base_multiple = 0.191196` at $100M TVL, `size_slope = −0.422285`. The odds fit is an IRLS logistic on
+the **645** protocols that record an age, of whether they record a token, on age, log TVL, 7-day
+growth and the eleven categories: `b0 = −1.248345`, age `+0.609180`, ln TVL `+0.163656`, growth
+`−2.570234`. `F` is the cumulative share of peers that record a token by a given age; `H` is the
+oldest observed age (5.071 years), so `q` is the remaining cohort's completion share. No name is
+read.
 
-On this snapshot:
+### Held-out evidence (measured by this build)
 
-| | |
-| --- | --- |
-| α, β, γ, δ | 16.5376, 0.5476, 0.6400, 0.2522 |
-| training rows | 128 of 144 with a market cap (16 record a zero market cap) |
-| trimmed per iteration | 26 |
-| calibration | 0.8668 |
-| validation | 5-fold × 20 repeats, n = 2,560 out-of-sample predictions |
-| median error | 3.889× in value (1.358 in log space) |
-| R² (log space) | 0.121 |
-| within 2× | 28% |
+| term | leave-one-out | walk-forward |
+| --- | ---: | ---: |
+| flat median multiple | ×4.498 | ×5.489 |
+| + size curve | ×3.545 | ×3.256 |
+| + category effect | ×3.372 | **×2.797** |
+| final value model | **×3.372** | **×2.797** |
 
-The cross-section is noisy, and the dashboard says so: the ranking is the model's claim, the absolute
-value is an estimate. Growth and age are small tilts, and every row shows both multipliers.
+The value model keeps 2 of 6 tested terms (size curve, category effect); growth, age, chain count,
+the CeFi/DeFi family effect and the no-information control are shown, not used. The odds model keeps
+4 of 5 (age, family, size, growth); chain count adds less than 0.001 Brier and is not used. Final
+Brier: **0.1982 leave-one-out / 0.2233 walk-forward** against **0.2507 / 0.2862** base rates;
+called right **68.1% / 66.9%** against **50.7% / 43.8%**.
 
-The same equation is applied to the 195 pre-token protocols. No protocol name is special-cased: the
-category map knows DefiLlama's taxonomy, not a list of winners.
+The printed P25–P75 band is `implied × [0.2597, 2.1916]` and P10–P90 is
+`implied × [0.0510, 7.2755]`, from the walk-forward residuals. Those bands cover **50.8%** and
+**78.5%** of held-out caps (stated 50% / 80%); **50.8%** are within ×3. Two hundred bootstrap refits
+give each row's rank range and the printed standard errors.
+
+## The farm verdict
+
+The scenario is a **$10,000** plan (capped at **0.017% of TVL**), a **7.0%** modelled drop share and
+**12 weeks**:
+
+```text
+drop          = effective_deposit × 7.0% × implied / TVL
+fees          = 0.0002 × $10,000 + $0.95 + $0.50 per extra chain
+net           = drop − fees
+net_per_hour  = net / (3.4 + category extra + 0.25 per extra chain)
+FARM          = net > 4%-T-bill ($92.31) and net_per_hour > $25
+MARGINAL      = net > 0 but not FARM
+SKIP          = net ≤ 0
+```
+
+On this snapshot: **28 FARM / 165 MARGINAL / 2 SKIP**. The FARM subset carries **$1.85B TVL** and
+**$349M implied**. Best net/hour: Arcus Perps $42.9, Firelight $42.0, Axis $39.6, Tori Finance $37.6,
+Nado Spot $37.1. Every row carries `farm_deposit_usd`, `farm_drop_share`, `farm_drop_usd`,
+`farm_fees_usd`, `farm_net_usd`, `farm_hours`, `farm_net_per_hour_usd`, `farm_tbill_usd`,
+`farm_verdict`, both break-evens, the exit level and the 16-cell sensitivity matrix.
 
 ## The page
 
-`dashboard/` is a static page — `index.html`, `app.css`, `app.js`, no framework, no webfont, no image,
-no network request. It reads `data.js`, which the program writes beside the page:
+`dashboard/` is static: `index.html`, `app.css`, `app.js`, no framework, no webfont, no image, no
+network request. It reads `data.js`, which `main.ts` writes beside it:
 
-- a **board** of every pre-token protocol, sortable on every column, filterable by search, category,
-  chain, age and watchlist membership;
-- a **live-token tab** with the 144 token-bearing protocols (128 with a priced cap), the market's cap beside the model's fitted
-  value, sorted by how close the fit came;
-- a **detail drawer** for every protocol: its record, the model's five multipliers, the arithmetic that
-  produces its value, a check that the page's own recomputation matches `board.json`, and a nine-step
-  farm plan with a cost and a time for each step;
-- a **methodology panel** with the equation, the coefficients, the fit's sample, the validation numbers
-  and what the model does not claim.
+- **Board** — six KPI cards, the protocol-accounting ledger with six checks (including the FNV-1a
+  digest of the exact `board.json` bytes, printed by `main.ts`), the out-of-sample evidence tables,
+  the toolbar, and the ranked table with token odds, value if it launches, implied value, P25–P75,
+  verdict, net of fees and net per hour.
+- **Detail** — the seven-row “how the figure is made” table with each factor's held-out miss, the
+  nearest priced peers, the farm verdict box with benchmarks and the 4×4 sensitivity matrix, and the
+  ten-step plan with a cost and a time per step.
+- **Decision** — the same board filtered to `verdict = FARM` and sorted by net per hour; the filter
+  state is in the hash (`#verdict=farm&sort=net`).
+- **Method** — the two equations, training counts, coefficient table with bootstrap standard
+  errors, six evidence KPIs, all eleven category multipliers, the farm policy and the limits.
+
+Every row is recomputed in the browser from the same coefficients and checked against `board.json`;
+`window.radarParts` exposes that arithmetic to `tools/gate.mjs`.
 
 ## Run it
 
 ```sh
 MAKEFUN_OUTPUT_DIR=out node main.ts --input <kit>/input/snapshot.json
-```
-
-Node 22.18 or later, the standard library only, no install. The program writes:
-
-```text
-out/board.json        the ranked board: 195 rows, each with rank, implied value and farm steps
-out/data.js           the dashboard's inputs and the fitted model
-out/dashboard/        the static page
-out/screenshots/      the three captured views
-out/dossier.json      what buildDossier writes from the four above, written last
-```
-
-## Check it
-
-```sh
 node tools/gate.mjs --snapshot <kit>/input/snapshot.json --out out
 ```
 
-The tool checks the seven rows make.fun's scorer checks (board shape and ordering, watchlist coverage,
-farm steps, dashboard files and network addresses, screenshots, dossier bytes) plus two local checks:
-the dashboard's text source fits the dossier's 64 KiB cap, and a local Chromium re-runs the page's own
-model and compares all 195 values and plans with `board.json`.
-
-Two runs of `main.ts` into different directories are byte-for-byte identical: the fit has no random
-seed in it, the validation's folds come from a fixed PRNG, and every write is ordered.
+Node 22.18 or later, the standard library only. The program writes `board.json`, `data.js`,
+`dashboard/`, `screenshots/` and `dossier.json`. Two runs into different directories are byte-for-byte
+identical: the LTS fit has no random seed, the bootstrap and validation use a fixed PRNG, and every
+write is ordered.
 
 ## Layout
 
 ```text
-main.ts               reads the snapshot, fits, writes the board, the data, the page and the dossier
-lib/model.ts          the snapshot parser, the LTS fit, the validation, the board and the live set
-lib/farm.ts           the farm-plan generator: category, chains, TVL and age in, nine steps out
-dashboard/            index.html, app.css, app.js — the page the judge reads
-screenshots/          1-board.png, 2-detail.png, 3-filtered.png, 4-method.png
-tools/gate.mjs        the local gate and the page-arithmetic check
-tools/shoot.mjs       captures the four screenshots from a finished build over DevTools
+main.ts               reads the snapshot, fits, writes the board, data, page, shots and dossier
+lib/model.ts          parser, LTS value fit, logistic odds, held-out tables, bootstrap, board
+lib/farm.ts           farm verdict, sensitivity matrix, ten-step plan
+dashboard/            index.html, app.css, app.js
+screenshots/          1-board.png, 2-detail.png, 3-decision.png, 4-method.png
+tools/gate.mjs        local gate and browser arithmetic check
+tools/evidence.ts     prints the held-out evidence tables for a snapshot
+tools/shoot.mjs       captures the four screenshots over DevTools
 vendor/               make.fun's dossier library, unchanged
 ```
 
 ## What it does not claim
 
-Implied value is this entry's own claim, computed from the snapshot's TVL, 7-day change and listing age.
-It is not a prediction that a token will be issued, and a record with no token is not proof that none
-exists: a protocol on the watchlist may still carry a token DefiLlama does not record, so every farm
-plan starts by checking the protocol's own site.
+Implied value is this entry's own estimate, not a price and not a promise that a token will launch.
+A record with no token is not proof that none exists. `drop_share`, the deposit cap, the fee schedule
+and the hours are policy assumptions, not snapshot facts; yield earned meanwhile is left out. The
+watchlist is the house's floor, and the 155 rows outside it are the radar's extension of the same rule.
