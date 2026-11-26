@@ -71,7 +71,8 @@ function renderLedger() {
 var A = D.audit;
 $('led-total').textContent = A.total;
 $('led-ranked').textContent = A.ranked;
-$('led-token').textContent = A.live;
+$('led-token').textContent = A.live_priced + A.token_no_cap + A.zero_cap;
+$('led-token-detail').textContent = '(' + A.live_priced + ' priced, ' + (A.token_no_cap + A.zero_cap) + ' without a usable cap)';
 $('led-out').textContent = A.excluded;
 var segs = [
 ['Ranked · watchlist', A.watchlist, 's1'],
@@ -95,7 +96,7 @@ var checks = $('led-checks'); clear(checks);
 'totals equal: ' + money(D.total_implied),
 'checksum ' + D.hash8 + ' = main.ts',
 'watchlist ' + D.watchlist_size + ' of ' + D.watchlist_size + ' ranked',
-'ledger ' + A.total + ' of ' + A.total + ' protocols'
+'ledger ' + segs.reduce(function (s, x) { return s + x[1]; }, 0) + ' of ' + A.total + ' protocols'
 ].forEach(function (c) { checks.appendChild(el('span', null, '✓ ' + c)); });
 }
 function renderEvidence() {
